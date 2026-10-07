@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 id = "cryo_lance"
 display_name = "Frost Lance"
-description = "Slower, heavier ice shots. 3 hits freeze an enemy; hitting or killing a frozen enemy shatters it in an explosion."
+description = "Slower, heavier ice shots. Each hit slows the enemy by 20% for 2 seconds."
 family = "Cryo"
 rarity = 1
 max_stacks = 3

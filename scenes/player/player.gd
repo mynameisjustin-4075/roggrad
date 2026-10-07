@@ -17,9 +17,9 @@ const BEAM_HALF_WIDTH := 2.0
 ## Main-shot stats per primary weapon. Damage is per projectile (per second for the beam).
 const WEAPONS := {
 	"": {"interval": 0.12, "speed": 380.0, "damage": 0.75, "kind": "pellet"},
-	"volt_lightning": {"interval": 0.2, "speed": 700.0, "damage": 2.0, "kind": "bolt"},
-	"cryo_lance": {"interval": 0.28, "speed": 240.0, "damage": 3.0, "kind": "lance"},
-	"nova_missiles": {"interval": 0.25, "speed": 180.0, "damage": 3.75, "kind": "missile"},
+	"volt_lightning": {"interval": 1.0, "speed": 700.0, "damage": 8.0, "kind": "bolt"},
+	"cryo_lance": {"interval": 0.28, "speed": 240.0, "damage": 3.5, "kind": "lance"},
+	"nova_missiles": {"interval": 0.75, "speed": 180.0, "damage": 9.0, "kind": "missile"},
 	"acid_beam": {"damage": 8.0, "kind": "beam"},
 }
 
@@ -97,7 +97,7 @@ func _fire() -> void:
 	var dmg: float = w.damage * level_mult()
 	var opts := {"kind": w.kind}
 	if w.kind == "missile":
-		opts["explode"] = 16.0 + 3.0 * (run.primary_level() - 1)
+		opts["explode"] = 24.0 + 4.0 * (run.primary_level() - 1)
 		_shoot(Vector2(8, -3 if shot_count % 2 == 0 else 3), 0.0, w.speed, dmg, opts)
 	elif w.kind == "pellet":
 		_shoot(Vector2(10, -2), 0.0, w.speed, dmg, opts)

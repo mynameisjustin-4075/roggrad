@@ -11,6 +11,10 @@ const PLAYER_COLORS := [Color("4fd8ff"), Color("8cff5a"), Color("ffa040"), Color
 const MAX_PLAYERS := 4
 const HP_PER_EXTRA_PLAYER := 0.6
 const SPAWNS_PER_EXTRA_PLAYER := 0.25
+## Speed multipliers while slowed; the strongest active slow wins.
+const FROST_LANCE_SLOW := 0.8
+const FROST_WAKE_SLOW := 0.6
+const SLOW_DURATION := 2.0
 
 @export var world: WorldData
 
@@ -361,7 +365,7 @@ func _apply_on_hit(e: Enemy, damage: float, run: PlayerRun) -> void:
 	if run.stacks("acid_corrode") > 0:
 		e.add_acid(run.stacks("acid_corrode"), run)
 	if run.stacks("cryo_frost") > 0:
-		e.slow_timer = 2.0
+		e.apply_slow(FROST_WAKE_SLOW, SLOW_DURATION)
 	var arc := run.stacks("volt_arc")
 	if arc > 0 and randf() < 0.25 * arc:
 		var target := _nearest_enemy(e.position, 70.0, [e])
@@ -384,20 +388,10 @@ func _chain_lightning(from_e: Enemy, damage: float, jumps: int, run: PlayerRun) 
 		cur = target
 
 
-## Frost Lance: build chill until frozen; a hit on a frozen enemy shatters it.
+## Frost Lance: every hit slows the enemy and restarts the slow timer.
 func _frost_hit(e: Enemy, damage: float, run: PlayerRun) -> void:
-	if e.frozen_timer > 0.0:
-		e.frozen_timer = 0.0
-		e.take_damage(damage, run)
-		_shatter(e.position, run)
-	else:
-		e.take_damage(damage, run)
-		e.add_chill()
-
-
-func _shatter(pos: Vector2, run: PlayerRun) -> void:
-	var level := run.primary_level() if run and run.primary == "cryo_lance" else 1
-	_explode(pos, 24.0, 3.0 * (1.0 + 0.25 * (level - 1)), run, Color(0.7, 0.9, 1.0))
+	e.take_damage(damage, run)
+	e.apply_slow(FROST_LANCE_SLOW, SLOW_DURATION)
 
 
 ## Corrosive Beam: the first enemy in the beam's path, if any.
@@ -419,7 +413,7 @@ func beam_hit(p: Player, e: Enemy, damage: float) -> void:
 	if p.beam_ticks % 3 == 0:
 		e.add_acid(run.primary_level() + run.stacks("acid_corrode"), run)
 	if run.stacks("cryo_frost") > 0:
-		e.slow_timer = 2.0
+		e.apply_slow(FROST_WAKE_SLOW, SLOW_DURATION)
 
 
 func _nearest_enemy(from: Vector2, max_dist: float, exclude: Array) -> Enemy:
@@ -459,9 +453,6 @@ func _clear_enemy_bullets() -> void:
 func on_enemy_killed(e: Enemy, run: PlayerRun) -> void:
 	RunState.scrap_earned += e.scrap
 	_effect("explosion", e.position, 0.35, e.radius * 2.0, e.color)
-	if e.frozen_timer > 0.0:
-		e.frozen_timer = 0.0
-		_shatter(e.position, run)
 	if run:
 		run.kills += 1
 		run.credits += e.scrap

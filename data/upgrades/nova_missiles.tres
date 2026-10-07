@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 id = "nova_missiles"
 display_name = "Missile Barrage"
-description = "Every shot becomes an accelerating missile that explodes on impact. Slower fire, big damage."
+description = "Fire a missile every 0.75 seconds that speeds up and explodes in a wide blast. Each level: bigger blast, +25% damage."
 family = "Nova"
 rarity = 1
 max_stacks = 3

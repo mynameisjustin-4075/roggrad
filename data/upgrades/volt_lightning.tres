@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 id = "volt_lightning"
 display_name = "Lightning Bolt"
-description = "Fire lightning bolts that chain to 2 more enemies. Each level: +1 chain, +25% damage."
+description = "Fire a heavy lightning bolt once per second that chains to 2 more enemies. Each level: +1 chain, +25% damage."
 family = "Volt"
 rarity = 1
 max_stacks = 3

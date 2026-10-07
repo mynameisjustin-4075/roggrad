@@ -1,7 +1,7 @@
 extends Node
 ## Headless smoke test for primary weapons. Run:
 ##   godot --headless --path . res://tests/weapon_check.tscn
-## Fires each weapon for 2 s at 3 tough, stationary gunners and prints what
+## Fires each weapon for 4 s at 3 tough, stationary gunners and prints what
 ## happened to them.
 
 const PRIMARIES := ["", "volt_lightning", "cryo_lance", "nova_missiles", "acid_beam"]
@@ -35,20 +35,20 @@ func _ready() -> void:
 			e.base_y = e.position.y
 			game.enemies.add_child(e)
 			targets.append(e)
-		var froze := 0
+		var slowed := 0
 		var max_acid := 0
 		var fx := 0
-		for f in 120:
+		for f in 240:
 			game.state = Game.State.PLAYING
 			game.room_time = -100.0
 			await get_tree().physics_frame
 			for e in targets:
-				if e.frozen_timer > 0.0:
-					froze += 1
+				if e.slow_timer > 0.0:
+					slowed += 1
 				max_acid = maxi(max_acid, e.acid_stacks)
 			fx = maxi(fx, game.effects.get_child_count())
 		var dmg := targets.map(func(e): return snappedf(e.max_hp - e.hp, 0.1))
-		print("%-15s damage per target %s  frozen-frames %d  max acid %d  peak effects %d" % [p.run.primary_name, str(dmg), froze, max_acid, fx])
+		print("%-15s damage per target %s  slowed-frames %d  max acid %d  peak effects %d" % [p.run.primary_name, str(dmg), slowed, max_acid, fx])
 	Input.action_release("fire")
 	get_tree().quit()
 
