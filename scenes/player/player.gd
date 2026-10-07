@@ -17,7 +17,7 @@ const BEAM_HALF_WIDTH := 2.0
 ## Main-shot stats per primary weapon. Damage is per projectile (per second for the beam).
 const WEAPONS := {
 	"": {"interval": 0.12, "speed": 380.0, "damage": 0.75, "kind": "pellet"},
-	"volt_lightning": {"interval": 1.0, "damage": 8.0, "kind": "zap", "range": 200.0},
+	"volt_lightning": {"interval": 1.0, "damage": 6.0, "kind": "zap", "range": 200.0},
 	"cryo_lance": {"interval": 0.28, "speed": 240.0, "damage": 3.5, "kind": "lance"},
 	"nova_missiles": {"interval": 0.75, "speed": 180.0, "damage": 9.0, "kind": "missile"},
 	"acid_beam": {"damage": 8.0, "kind": "beam"},
