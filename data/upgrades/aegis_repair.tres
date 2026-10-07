@@ -10,3 +10,5 @@ description = "Repair 1 hull every 8 kills."
 family = "Aegis"
 rarity = 1
 max_stacks = 1
+slot = "passive"
+incompatible_with = PackedStringArray()

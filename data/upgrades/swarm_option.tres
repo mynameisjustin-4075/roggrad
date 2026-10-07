@@ -5,8 +5,10 @@
 [resource]
 script = ExtResource("1_script")
 id = "swarm_option"
-display_name = "Option Pod"
-description = "Gain an Option that trails behind you and copies your shots."
+display_name = "Formation Drone"
+description = "Add a drone locked in formation above or below your ship. It fires alongside your main weapon."
 family = "Swarm"
 rarity = 1
 max_stacks = 4
+slot = "passive"
+incompatible_with = PackedStringArray()

@@ -18,6 +18,7 @@ func setup_boss(hp_mult: float) -> void:
 	scrap = 50
 	fire_interval = 1.1
 	fire_timer = 2.0
+	freeze_duration = 0.6
 
 
 func _move(delta: float) -> void:

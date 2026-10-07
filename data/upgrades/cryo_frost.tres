@@ -10,3 +10,5 @@ description = "Hits slow enemies by 40% for 2 seconds."
 family = "Cryo"
 rarity = 0
 max_stacks = 1
+slot = "passive"
+incompatible_with = PackedStringArray()

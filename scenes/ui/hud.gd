@@ -22,7 +22,10 @@ func _draw() -> void:
 		for b in run.bombs:
 			draw_circle(Vector2(x + 21 + b * 6, 17), 2.0, Color(1, 0.5, 0.3))
 		draw_string(font, Vector2(x + 18 + run.max_hull * 7 + 4, 12), "%dc" % run.credits, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.8, 0.8, 0.5))
-		if not run.alive:
+		if run.alive:
+			var weapon_name := run.primary_name + (" %d" % run.primary_level() if run.primary != "" else "")
+			draw_string(font, Vector2(x + 34, 21), weapon_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.7, 0.7, 0.8))
+		else:
 			draw_string(font, Vector2(x + 34, 21), "DOWN", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 0.3, 0.3))
 	if game.room:
 		draw_string(font, Vector2(0, 264), game.room.display_name, HORIZONTAL_ALIGNMENT_RIGHT, 474, 8, Color(0.6, 0.6, 0.7))

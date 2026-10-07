@@ -6,7 +6,9 @@
 script = ExtResource("1_script")
 id = "nova_payload"
 display_name = "Payload"
-description = "Every 5th shot launches a missile that explodes for 4x damage."
+description = "Every 5th shot also launches a missile that explodes for 4x damage."
 family = "Nova"
 rarity = 1
 max_stacks = 1
+slot = "passive"
+incompatible_with = PackedStringArray("nova_missiles", "acid_beam")

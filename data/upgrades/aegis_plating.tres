@@ -10,3 +10,5 @@ description = "+1 max hull and repair 1 hull."
 family = "Aegis"
 rarity = 0
 max_stacks = 3
+slot = "passive"
+incompatible_with = PackedStringArray()

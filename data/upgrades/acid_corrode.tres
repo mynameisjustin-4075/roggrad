@@ -6,7 +6,9 @@
 script = ExtResource("1_script")
 id = "acid_corrode"
 display_name = "Corrosive Rounds"
-description = "Hits stack burning acid (up to 5 stacks), dealing damage over time. More levels burn hotter."
+description = "Hits stack burning acid (up to 5 stacks). More levels burn hotter, including your beam's acid."
 family = "Acid/Fire"
 rarity = 0
 max_stacks = 3
+slot = "passive"
+incompatible_with = PackedStringArray()

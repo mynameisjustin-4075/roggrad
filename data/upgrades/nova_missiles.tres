@@ -4,11 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "volt_overclock"
-display_name = "Overclock"
-description = "+30% fire rate per level. Beams deal +30% damage instead."
-family = "Volt"
-rarity = 0
+id = "nova_missiles"
+display_name = "Missile Barrage"
+description = "Every shot becomes an accelerating missile that explodes on impact. Slower fire, big damage."
+family = "Nova"
+rarity = 1
 max_stacks = 3
-slot = "passive"
+slot = "primary"
 incompatible_with = PackedStringArray()

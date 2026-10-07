@@ -4,11 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "volt_overclock"
-display_name = "Overclock"
-description = "+30% fire rate per level. Beams deal +30% damage instead."
-family = "Volt"
-rarity = 0
+id = "cryo_lance"
+display_name = "Frost Lance"
+description = "Slower, heavier ice shots. 3 hits freeze an enemy; hitting or killing a frozen enemy shatters it in an explosion."
+family = "Cryo"
+rarity = 1
 max_stacks = 3
-slot = "passive"
+slot = "primary"
 incompatible_with = PackedStringArray()

@@ -66,7 +66,11 @@ func _draw() -> void:
 		draw_string(font, rect.position + Vector2(8, 24), u.display_name, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 16, 12, Color.WHITE)
 		draw_string(font, rect.position + Vector2(8, 38), "%s - %s" % [u.family, RARITY_NAMES[u.rarity]], HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 16, 8, fc)
 		var level := run.stacks(u.id)
-		if u.max_stacks > 1:
-			draw_string(font, rect.position + Vector2(8, 50), "Level %d -> %d" % [level, level + 1], HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 16, 8, Color(0.7, 0.7, 0.8))
+		var note := ""
+		if u.slot == "primary" and run.primary != u.id:
+			note = "PRIMARY - replaces " + run.primary_name
+		elif u.max_stacks > 1:
+			note = "Level %d -> %d" % [level, level + 1]
+		draw_string(font, rect.position + Vector2(8, 50), note, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 16, 8, Color(1, 0.85, 0.5) if u.slot == "primary" else Color(0.7, 0.7, 0.8))
 		draw_multiline_string(font, rect.position + Vector2(8, 68), u.description, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 16, 10, -1, Color(0.85, 0.85, 0.9))
 	draw_string(font, Vector2(0, 236), "Left / Right to choose    Fire / Enter to take it", HORIZONTAL_ALIGNMENT_CENTER, 480, 8, Color(0.6, 0.6, 0.7))

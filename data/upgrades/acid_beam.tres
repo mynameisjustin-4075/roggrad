@@ -4,11 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "volt_overclock"
-display_name = "Overclock"
-description = "+30% fire rate per level. Beams deal +30% damage instead."
-family = "Volt"
-rarity = 0
+id = "acid_beam"
+display_name = "Corrosive Beam"
+description = "Hold fire for a continuous beam that burns the first enemy in its path and stacks acid on it."
+family = "Acid/Fire"
+rarity = 1
 max_stacks = 3
-slot = "passive"
+slot = "primary"
 incompatible_with = PackedStringArray()

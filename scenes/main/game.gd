@@ -113,8 +113,24 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## Debug builds only. F1: toggle invincibility. F2: clear the current room.
+## F3: cycle P1's primary weapon. F4: give P1 a formation drone.
 func _debug_key(keycode: Key) -> void:
+	var p1 := RunState.players[0]
 	match keycode:
+		KEY_F3:
+			var primaries := _upgrade_library.filter(func(u): return u.slot == "primary")
+			primaries.sort_custom(func(a, b): return a.id < b.id)
+			var ids := primaries.map(func(u): return u.id)
+			var next := ids.find(p1.primary) + 1
+			if next >= primaries.size():
+				p1.upgrades.erase(p1.primary)
+				p1.primary = ""
+				p1.primary_name = PlayerRun.DEFAULT_PRIMARY_NAME
+			else:
+				p1.take_primary(primaries[next])
+			_banner(p1.primary_name)
+		KEY_F4:
+			p1.upgrades["swarm_option"] = mini(p1.stacks("swarm_option") + 1, 4)
 		KEY_F1:
 			god_mode = not god_mode
 			_banner("God mode " + ("on" if god_mode else "off"))
@@ -232,13 +248,22 @@ func _next_pick() -> void:
 
 
 func _roll_options(run: PlayerRun) -> Array:
-	var pool := _upgrade_library.filter(func(u): return run.stacks(u.id) < u.max_stacks)
+	var pool := _upgrade_library.filter(func(u): return _can_offer(run, u))
 	pool.shuffle()
 	return pool.slice(0, 3)
 
 
+func _can_offer(run: PlayerRun, u: UpgradeData) -> bool:
+	if run.primary in u.incompatible_with:
+		return false
+	return run.stacks(u.id) < u.max_stacks
+
+
 func _on_upgrade_chosen(run: PlayerRun, u: UpgradeData) -> void:
-	run.upgrades[u.id] = run.stacks(u.id) + 1
+	if u.slot == "primary":
+		run.take_primary(u)
+	else:
+		run.upgrades[u.id] = run.stacks(u.id) + 1
 	if u.id == "aegis_plating":
 		run.max_hull += 1
 		run.hull = mini(run.hull + 1, run.max_hull)
@@ -266,8 +291,8 @@ func spawn_player_bullet(pos: Vector2, vel: Vector2, damage: float, run: PlayerR
 	b.damage = damage
 	b.owner_run = run
 	b.color = PLAYER_COLORS[run.index].lightened(0.4)
+	b.kind = opts.get("kind", "pellet")
 	b.radius = opts.get("radius", 2.0)
-	b.missile = opts.get("missile", false)
 	b.explode_radius = opts.get("explode", 0.0)
 	b.pierce_left = opts.get("pierce", 0)
 	player_bullets.add_child(b)
@@ -317,27 +342,91 @@ func _collide() -> void:
 
 func _bullet_hit_enemy(b: Bullet, e: Enemy) -> void:
 	var run := b.owner_run
-	if b.explode_radius > 0.0:
-		_explode(b.position, b.explode_radius, b.damage, run)
-	else:
-		e.take_damage(b.damage, run)
+	match b.kind:
+		"bolt":
+			e.take_damage(b.damage, run)
+			_chain_lightning(e, b.damage * 0.7, 1 + run.primary_level(), run)
+		"lance":
+			_frost_hit(e, b.damage, run)
+		_:
+			if b.explode_radius > 0.0:
+				_explode(b.position, b.explode_radius, b.damage, run)
+			else:
+				e.take_damage(b.damage, run)
+	_apply_on_hit(e, b.damage, run)
+
+
+## Add-on effects shared by every weapon, including the beam.
+func _apply_on_hit(e: Enemy, damage: float, run: PlayerRun) -> void:
 	if run.stacks("acid_corrode") > 0:
 		e.add_acid(run.stacks("acid_corrode"), run)
 	if run.stacks("cryo_frost") > 0:
 		e.slow_timer = 2.0
 	var arc := run.stacks("volt_arc")
 	if arc > 0 and randf() < 0.25 * arc:
-		var target := _nearest_enemy(e.position, 70.0, e)
+		var target := _nearest_enemy(e.position, 70.0, [e])
 		if target:
-			target.take_damage(b.damage * 0.5, run)
+			target.take_damage(damage * 0.5, run)
 			_effect("arc", e.position, 0.15, 0.0, Color(1, 0.95, 0.4), target.position)
 
 
-func _nearest_enemy(from: Vector2, max_dist: float, exclude: Enemy) -> Enemy:
+## Lightning Bolt: jump from enemy to enemy, never hitting the same one twice.
+func _chain_lightning(from_e: Enemy, damage: float, jumps: int, run: PlayerRun) -> void:
+	var hit: Array = [from_e]
+	var cur := from_e
+	for j in jumps:
+		var target := _nearest_enemy(cur.position, 80.0, hit)
+		if target == null:
+			return
+		_effect("arc", cur.position, 0.15, 0.0, Color(1, 0.95, 0.4), target.position)
+		target.take_damage(damage, run)
+		hit.append(target)
+		cur = target
+
+
+## Frost Lance: build chill until frozen; a hit on a frozen enemy shatters it.
+func _frost_hit(e: Enemy, damage: float, run: PlayerRun) -> void:
+	if e.frozen_timer > 0.0:
+		e.frozen_timer = 0.0
+		e.take_damage(damage, run)
+		_shatter(e.position, run)
+	else:
+		e.take_damage(damage, run)
+		e.add_chill()
+
+
+func _shatter(pos: Vector2, run: PlayerRun) -> void:
+	var level := run.primary_level() if run and run.primary == "cryo_lance" else 1
+	_explode(pos, 24.0, 3.0 * (1.0 + 0.25 * (level - 1)), run, Color(0.7, 0.9, 1.0))
+
+
+## Corrosive Beam: the first enemy in the beam's path, if any.
+func beam_target(from: Vector2, half_width: float) -> Enemy:
+	var best: Enemy = null
+	for e in enemies.get_children():
+		if e.dead or e.position.x < from.x:
+			continue
+		if absf(e.position.y - from.y) < e.radius + half_width:
+			if best == null or e.position.x < best.position.x:
+				best = e
+	return best
+
+
+func beam_hit(p: Player, e: Enemy, damage: float) -> void:
+	var run := p.run
+	e.take_damage(damage, run)
+	p.beam_ticks += 1
+	if p.beam_ticks % 3 == 0:
+		e.add_acid(run.primary_level() + run.stacks("acid_corrode"), run)
+	if run.stacks("cryo_frost") > 0:
+		e.slow_timer = 2.0
+
+
+func _nearest_enemy(from: Vector2, max_dist: float, exclude: Array) -> Enemy:
 	var best: Enemy = null
 	var best_d := max_dist
 	for e in enemies.get_children():
-		if e == exclude or e.dead:
+		if e in exclude or e.dead:
 			continue
 		var d := from.distance_to(e.position)
 		if d < best_d:
@@ -346,8 +435,8 @@ func _nearest_enemy(from: Vector2, max_dist: float, exclude: Enemy) -> Enemy:
 	return best
 
 
-func _explode(pos: Vector2, r: float, damage: float, run: PlayerRun) -> void:
-	_effect("explosion", pos, 0.25, r, Color(1, 0.6, 0.2))
+func _explode(pos: Vector2, r: float, damage: float, run: PlayerRun, color := Color(1, 0.6, 0.2)) -> void:
+	_effect("explosion", pos, 0.25, r, color)
 	for e in enemies.get_children():
 		if not e.dead and e.position.distance_to(pos) < r + e.radius:
 			e.take_damage(damage, run)
@@ -370,6 +459,9 @@ func _clear_enemy_bullets() -> void:
 func on_enemy_killed(e: Enemy, run: PlayerRun) -> void:
 	RunState.scrap_earned += e.scrap
 	_effect("explosion", e.position, 0.35, e.radius * 2.0, e.color)
+	if e.frozen_timer > 0.0:
+		e.frozen_timer = 0.0
+		_shatter(e.position, run)
 	if run:
 		run.kills += 1
 		run.credits += e.scrap

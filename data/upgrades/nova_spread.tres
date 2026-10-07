@@ -6,7 +6,9 @@
 script = ExtResource("1_script")
 id = "nova_spread"
 display_name = "Wide Spread"
-description = "+2 angled shots per level."
+description = "+2 angled copies of your main shot per level, at 60% damage."
 family = "Nova"
 rarity = 0
 max_stacks = 2
+slot = "passive"
+incompatible_with = PackedStringArray("acid_beam")

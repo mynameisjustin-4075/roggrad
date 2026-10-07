@@ -10,3 +10,5 @@ description = "Hits have a 25% chance per level to arc to a nearby enemy for hal
 family = "Volt"
 rarity = 1
 max_stacks = 3
+slot = "passive"
+incompatible_with = PackedStringArray("volt_lightning", "acid_beam")

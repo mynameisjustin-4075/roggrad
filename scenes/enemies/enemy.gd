@@ -32,6 +32,9 @@ var acid_stacks := 0
 var acid_power := 0
 var acid_timer := 0.0
 var acid_owner: PlayerRun = null
+var chill := 0
+var frozen_timer := 0.0
+var freeze_duration := 1.5
 
 
 func setup(p_kind: String, hp_mult: float) -> void:
@@ -52,11 +55,14 @@ func setup(p_kind: String, hp_mult: float) -> void:
 func _physics_process(delta: float) -> void:
 	if dead:
 		return
-	t += delta
-	var slow := 0.6 if slow_timer > 0.0 else 1.0
-	slow_timer -= delta
-	_move(delta * slow)
-	_update_fire(delta * slow)
+	if frozen_timer > 0.0:
+		frozen_timer -= delta
+	else:
+		t += delta
+		var slow := 0.6 if slow_timer > 0.0 else 1.0
+		slow_timer -= delta
+		_move(delta * slow)
+		_update_fire(delta * slow)
 	if acid_stacks > 0:
 		_tick_acid(delta)
 	flash = maxf(flash - delta, 0.0)
@@ -107,6 +113,14 @@ func add_acid(power: int, source: PlayerRun) -> void:
 	acid_timer = 3.0
 
 
+## Frost Lance hits build chill; 3 chill freezes the enemy in place.
+func add_chill() -> void:
+	chill += 1
+	if chill >= 3:
+		chill = 0
+		frozen_timer = freeze_duration
+
+
 func _tick_acid(delta: float) -> void:
 	acid_timer -= delta
 	if acid_timer <= 0.0:
@@ -145,3 +159,9 @@ func _draw_status() -> void:
 		draw_arc(Vector2.ZERO, radius + 2.0, 0.0, TAU, 12, Color(0.6, 1.0, 0.2, 0.8), 1.0)
 	if slow_timer > 0.0:
 		draw_arc(Vector2.ZERO, radius + 3.5, 0.0, TAU, 12, Color(0.6, 0.85, 1.0, 0.7), 1.0)
+	if frozen_timer > 0.0:
+		draw_circle(Vector2.ZERO, radius + 1.0, Color(0.7, 0.9, 1.0, 0.55))
+		draw_arc(Vector2.ZERO, radius + 1.5, 0.0, TAU, 6, Color.WHITE, 1.0)
+	elif chill > 0:
+		for i in chill:
+			draw_rect(Rect2(-radius + i * 4, -radius - 5, 3, 2), Color(0.6, 0.9, 1.0))
