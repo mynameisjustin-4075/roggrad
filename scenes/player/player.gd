@@ -1,12 +1,17 @@
 class_name Player
 extends Node2D
 ## The Lancer. Its main shot is Twin Shot until a primary weapon upgrade
-## replaces it; hold Special to charge a piercing beam. Each co-op player gets
-## one of these with their own controls and PlayerRun.
+## replaces it. Secondary (default: Charge Beam) and Dodge each run on their
+## own cooldown. Each co-op player gets one of these with their own controls
+## and PlayerRun.
 
 const HITBOX := 2.0
 const BASE_SPEED := 120.0
 const INVULN_TIME := 1.5
+const DODGE_SPEED := 380.0
+const DODGE_DASH_TIME := 0.15
+const DODGE_IFRAMES := 0.35
+const DODGE_COOLDOWN := 1.2
 const DRONE_INTERVAL := 0.18
 const DRONE_DAMAGE := 0.5
 ## Drone slots: alternate above and below the ship, second pair further out.
@@ -23,6 +28,12 @@ const WEAPONS := {
 	"acid_beam": {"damage": 8.0, "kind": "beam"},
 }
 
+## Secondary abilities by upgrade id; "" is the Lancer's own Charge Beam.
+## Corporation secondaries (offensive or defensive) get added here later.
+const SECONDARIES := {
+	"": {"name": "Charge Beam", "cooldown": 4.0},
+}
+
 var run: PlayerRun
 var game
 var ctl: ControlState
@@ -37,6 +48,11 @@ var beam_on := false
 var beam_end_x := 480.0
 var beam_ticks := 0  # beam damage ticks; every 3rd one stacks acid
 var _beam_timer := 0.0
+var secondary_cooldown := 0.0
+var dodge_cooldown := 0.0
+var dodge_iframes := 0.0
+var _dodge_dash := 0.0
+var _dodge_dir := Vector2.ZERO
 
 
 func setup(p_run: PlayerRun, p_game, p_color: Color) -> void:
@@ -47,7 +63,11 @@ func setup(p_run: PlayerRun, p_game, p_color: Color) -> void:
 
 
 func can_be_hit() -> bool:
-	return run.alive and invuln <= 0.0 and not game.god_mode
+	return run.alive and invuln <= 0.0 and dodge_iframes <= 0.0 and not game.god_mode
+
+
+func secondary() -> Dictionary:
+	return SECONDARIES.get(run.secondary, SECONDARIES[""])
 
 
 func weapon() -> Dictionary:
@@ -65,16 +85,26 @@ func fire_rate_mult() -> float:
 
 func _physics_process(delta: float) -> void:
 	var bomb_pressed := ctl.pressed("bomb")
+	var dodge_pressed := ctl.pressed("dodge")
 	beam_on = false
 	if not run.alive:
 		return
 	focused = ctl.down("focus")
-	position += ctl.move() * BASE_SPEED * (0.5 if focused else 1.0) * delta
+	if _dodge_dash > 0.0:
+		_dodge_dash -= delta
+		position += _dodge_dir * DODGE_SPEED * delta
+	else:
+		position += ctl.move() * BASE_SPEED * (0.5 if focused else 1.0) * delta
 	position = position.clamp(Vector2(8, 8), Vector2(472, 262))
 	invuln = maxf(invuln - delta, 0.0)
+	dodge_iframes = maxf(dodge_iframes - delta, 0.0)
+	dodge_cooldown = maxf(dodge_cooldown - delta, 0.0)
+	secondary_cooldown = maxf(secondary_cooldown - delta, 0.0)
 	fire_timer -= delta
 	drone_timer -= delta
 	if game.state == Game.State.PLAYING:
+		if dodge_pressed and dodge_cooldown <= 0.0:
+			_dodge()
 		var firing := ctl.down("fire")
 		if weapon().kind == "beam":
 			beam_on = firing
@@ -83,7 +113,7 @@ func _physics_process(delta: float) -> void:
 			_fire()
 		if firing and drone_timer <= 0.0:
 			_fire_drones()
-		_update_charge(delta)
+		_update_secondary(delta)
 		if bomb_pressed and run.bombs > 0:
 			run.bombs -= 1
 			game.bomb(self)
@@ -153,12 +183,26 @@ func _update_beam(delta: float) -> void:
 			game.beam_hit(self, target, dps * BEAM_TICK)
 
 
-func _update_charge(delta: float) -> void:
-	if ctl.down("special"):
+## Dash in the held direction with brief invulnerability. With no direction
+## held it's a barrel roll in place: invulnerable, but no movement.
+func _dodge() -> void:
+	_dodge_dir = ctl.move().normalized()
+	_dodge_dash = DODGE_DASH_TIME if _dodge_dir != Vector2.ZERO else 0.0
+	dodge_iframes = DODGE_IFRAMES
+	dodge_cooldown = DODGE_COOLDOWN
+
+
+func _update_secondary(delta: float) -> void:
+	if secondary_cooldown > 0.0:
+		charge = 0.0
+		return
+	# Charge Beam: hold to charge (up to 1 s), release to fire a piercing shot.
+	if ctl.down("secondary"):
 		charge = minf(charge + delta, 1.0)
 	elif charge > 0.0:
 		if charge >= 0.3:
 			_shoot(Vector2(12, 0), 0.0, 300.0, 10.0 * charge, {"kind": "charge", "radius": 3.0 + 4.0 * charge, "pierce": 99})
+			secondary_cooldown = secondary().cooldown
 		charge = 0.0
 
 
@@ -198,7 +242,15 @@ func _draw() -> void:
 		draw_rect(Rect2(d + Vector2(-1, -0.5), Vector2(2, 1)), Color.WHITE)
 	if invuln > 0.0 and int(invuln * 20.0) % 2 == 0:
 		return
-	draw_colored_polygon(PackedVector2Array([Vector2(10, 0), Vector2(-7, -6), Vector2(-3, 0), Vector2(-7, 6)]), color)
+	var roll := 1.0
+	if dodge_iframes > 0.0:
+		# Barrel roll: squash the ship vertically and leave afterimages.
+		var progress := 1.0 - dodge_iframes / DODGE_IFRAMES
+		roll = maxf(absf(cos(progress * TAU)), 0.2)
+		for i in [1, 2]:
+			var ghost: Vector2 = -_dodge_dir * 7.0 * i
+			draw_colored_polygon(_ship_shape(ghost, roll), Color(color, 0.35 / i))
+	draw_colored_polygon(_ship_shape(Vector2.ZERO, roll), color)
 	draw_rect(Rect2(-10, -1, 3, 2), Color(1, 0.6, 0.2) if Engine.get_physics_frames() % 4 < 2 else Color(1, 0.9, 0.4))
 	if charge >= 0.3:
 		draw_circle(Vector2(12, 0), 2.0 + 3.0 * charge, Color(1, 1, 1, 0.7))
@@ -207,3 +259,10 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, HITBOX, Color.RED)
 	if game.players.size() > 1:
 		draw_string(ThemeDB.fallback_font, Vector2(-6, -9), "P%d" % (run.index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, color)
+
+
+func _ship_shape(offset: Vector2, y_scale: float) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for p in [Vector2(10, 0), Vector2(-7, -6), Vector2(-3, 0), Vector2(-7, 6)]:
+		pts.append(offset + Vector2(p.x, p.y * y_scale))
+	return pts

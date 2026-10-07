@@ -21,6 +21,9 @@ func _draw() -> void:
 			draw_rect(Rect2(x + 18 + h * 7, 4, 5, 7), p.color if h < run.hull else Color(0.25, 0.25, 0.3))
 		for b in run.bombs:
 			draw_circle(Vector2(x + 21 + b * 6, 17), 2.0, Color(1, 0.5, 0.3))
+		if run.alive:
+			_cooldown_bar(Vector2(x + 18, 25), 1.0 - p.dodge_cooldown / Player.DODGE_COOLDOWN, p.color)
+			_cooldown_bar(Vector2(x + 38, 25), 1.0 - p.secondary_cooldown / p.secondary().cooldown, Color(1, 0.85, 0.5))
 		draw_string(font, Vector2(x + 18 + run.max_hull * 7 + 4, 12), "%dc" % run.credits, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.8, 0.8, 0.5))
 		if run.alive:
 			var weapon_name := run.primary_name + (" %d" % run.primary_level() if run.primary != "" else "")
@@ -38,6 +41,13 @@ func _draw() -> void:
 		draw_rect(Rect2(0, 0, 480, 270), Color(1, 1, 1, flash))
 	if game.state == Game.State.VICTORY or game.state == Game.State.GAME_OVER:
 		_draw_end_screen(font)
+
+
+## A 16x2 bar: full and bright when ready, dim while recharging.
+func _cooldown_bar(pos: Vector2, ready: float, color: Color) -> void:
+	ready = clampf(ready, 0.0, 1.0)
+	draw_rect(Rect2(pos, Vector2(16, 2)), Color(0.2, 0.2, 0.25))
+	draw_rect(Rect2(pos, Vector2(16 * ready, 2)), color if ready >= 1.0 else Color(color, 0.45))
 
 
 func _draw_boss_bar(font: Font) -> void:

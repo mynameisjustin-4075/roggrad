@@ -14,6 +14,7 @@ var bombs := 2
 var upgrades := {}  # upgrade id -> stacks (the primary weapon's stacks = its level)
 var primary := ""  # upgrade id of the primary weapon; "" = the ship's own shot
 var primary_name := DEFAULT_PRIMARY_NAME
+var secondary := ""  # upgrade id of the secondary ability; "" = the ship's own
 var credits := 0
 var kills := 0
 var alive := true

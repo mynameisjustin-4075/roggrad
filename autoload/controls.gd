@@ -12,7 +12,8 @@ const KEYS := {
 	"move_up": [KEY_W, KEY_UP],
 	"move_down": [KEY_S, KEY_DOWN],
 	"fire": [KEY_J, KEY_SPACE],
-	"special": [KEY_K],
+	"secondary": [KEY_K],
+	"dodge": [KEY_I],
 	"focus": [KEY_SHIFT],
 	"bomb": [KEY_L],
 	"confirm": [KEY_ENTER, KEY_SPACE, KEY_J],
@@ -20,12 +21,13 @@ const KEYS := {
 }
 
 const JOY_BUTTONS := {
-	"fire": JOY_BUTTON_A,
-	"special": JOY_BUTTON_X,
-	"bomb": JOY_BUTTON_B,
-	"focus": JOY_BUTTON_RIGHT_SHOULDER,
-	"confirm": JOY_BUTTON_A,
-	"start": JOY_BUTTON_START,
+	"fire": [JOY_BUTTON_A],
+	"secondary": [JOY_BUTTON_X],
+	"dodge": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_Y],
+	"bomb": [JOY_BUTTON_B],
+	"focus": [JOY_BUTTON_RIGHT_SHOULDER],
+	"confirm": [JOY_BUTTON_A],
+	"start": [JOY_BUTTON_START],
 }
 
 
@@ -70,8 +72,9 @@ func is_down(devices: Array, action: String) -> bool:
 			if InputMap.has_action(action) and Input.is_action_pressed(action):
 				return true
 		else:
-			if JOY_BUTTONS.has(action) and Input.is_joy_button_pressed(d, JOY_BUTTONS[action]):
-				return true
+			for button in JOY_BUTTONS.get(action, []):
+				if Input.is_joy_button_pressed(d, button):
+					return true
 			if action == "fire" and Input.get_joy_axis(d, JOY_AXIS_TRIGGER_RIGHT) > 0.5:
 				return true
 			if action == "focus" and Input.get_joy_axis(d, JOY_AXIS_TRIGGER_LEFT) > 0.5:

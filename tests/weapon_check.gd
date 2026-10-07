@@ -50,7 +50,59 @@ func _ready() -> void:
 		var dmg := targets.map(func(e): return snappedf(e.max_hp - e.hp, 0.1))
 		print("%-15s damage per target %s  slowed-frames %d  max acid %d  peak effects %d" % [p.run.primary_name, str(dmg), slowed, max_acid, fx])
 	Input.action_release("fire")
+	await _check_abilities(game, p)
 	get_tree().quit()
+
+
+func _frames(n: int, game: Game) -> void:
+	for f in n:
+		game.state = Game.State.PLAYING
+		game.room_time = -100.0
+		await get_tree().physics_frame
+
+
+func _check_abilities(game: Game, p: Player) -> void:
+	game.god_mode = false
+	for e in game.enemies.get_children():
+		e.dead = true
+		e.queue_free()
+	await _frames(70, game)  # let any old cooldowns expire
+	# Dodge down: should dash ~57 px, be unhittable, then refuse a second dodge.
+	p.position = Vector2(100, 100)
+	Input.action_press("move_down")
+	Input.action_press("dodge")
+	await _frames(2, game)
+	var hittable_during := p.can_be_hit()
+	Input.action_release("dodge")
+	await _frames(12, game)
+	Input.action_release("move_down")
+	var moved := p.position.y - 100.0
+	await _frames(12, game)  # i-frames (21 frames) over, cooldown (72 frames) not
+	Input.action_press("dodge")
+	await _frames(2, game)
+	Input.action_release("dodge")
+	print("Dodge: moved %.0f px, hittable during dodge: %s, second dodge blocked: %s, hittable after: %s" % [
+		moved, hittable_during, p.dodge_cooldown > 0.0 and p.dodge_iframes == 0.0, p.can_be_hit()])
+	# Secondary: charge 0.5 s, release -> one shot and a 4 s cooldown; retry is blocked.
+	var before := game.player_bullets.get_child_count()
+	Input.action_press("secondary")
+	await _frames(30, game)
+	Input.action_release("secondary")
+	await _frames(1, game)
+	var shots := 0
+	for b in game.player_bullets.get_children():
+		if b.kind == "charge":
+			shots += 1
+	var cd := p.secondary_cooldown
+	Input.action_press("secondary")
+	await _frames(30, game)
+	Input.action_release("secondary")
+	await _frames(1, game)
+	var shots_after := 0
+	for b in game.player_bullets.get_children():
+		if b.kind == "charge":
+			shots_after += 1
+	print("Secondary: charge shots fired %d, cooldown %.1f s, extra shots during cooldown %d" % [shots, cd, shots_after - shots])
 
 
 func _equip(game: Game, run: PlayerRun, id: String) -> void:
