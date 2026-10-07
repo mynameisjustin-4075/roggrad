@@ -26,7 +26,14 @@ func _draw() -> void:
 			if k > 0.6:
 				draw_circle(Vector2.ZERO, radius * 0.4 * k, Color(1, 1, 0.8, k))
 		"arc":
+			# Jagged bolt, re-rolled every frame so it crackles.
 			var to := target - position
-			var mid := to * 0.5 + to.orthogonal().normalized() * randf_range(-4.0, 4.0)
-			draw_line(Vector2.ZERO, mid, c, 1.0)
-			draw_line(mid, to, c, 1.0)
+			var side := to.orthogonal().normalized()
+			var segments := clampi(int(to.length() / 12.0), 3, 12)
+			var points := PackedVector2Array([Vector2.ZERO])
+			for i in range(1, segments):
+				points.append(to * (float(i) / segments) + side * randf_range(-5.0, 5.0))
+			points.append(to)
+			draw_polyline(points, Color(c, k * 0.35), 3.0)
+			draw_polyline(points, c, 1.0)
+			draw_circle(to, 2.5 * k, Color(1, 1, 1, k))

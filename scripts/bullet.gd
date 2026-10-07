@@ -1,7 +1,7 @@
 class_name Bullet
 extends Node2D
 ## A player or enemy projectile. Collision is checked by the game, not physics.
-## Player kinds: "pellet", "bolt" (lightning), "lance" (ice), "missile", "charge".
+## Player kinds: "pellet", "lance" (ice), "missile", "charge".
 
 const MISSILE_TOP_SPEED := 420.0
 const MISSILE_ACCEL := 600.0
@@ -24,7 +24,7 @@ func _physics_process(delta: float) -> void:
 	position += vel * delta
 	if position.x < -16 or position.x > 496 or position.y < -16 or position.y > 286:
 		queue_free()
-	if kind == "bolt" or kind == "missile":
+	if kind == "missile":
 		queue_redraw()
 
 
@@ -34,10 +34,6 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius * 0.5, Color.WHITE)
 		return
 	match kind:
-		"bolt":
-			var j := randf_range(-1.5, 1.5)
-			draw_polyline(PackedVector2Array([Vector2(-6, 0), Vector2(-2, j), Vector2(2, -j), Vector2(6, 0)]), Color(1, 0.95, 0.4), 1.0)
-			draw_circle(Vector2(6, 0), 1.5, Color.WHITE)
 		"lance":
 			draw_colored_polygon(PackedVector2Array([Vector2(6, 0), Vector2(0, -2.5), Vector2(-6, 0), Vector2(0, 2.5)]), Color(0.6, 0.9, 1.0))
 			draw_line(Vector2(-4, 0), Vector2(5, 0), Color.WHITE, 1.0)

@@ -11,4 +11,4 @@ family = "Nova"
 rarity = 0
 max_stacks = 2
 slot = "passive"
-incompatible_with = PackedStringArray("acid_beam")
+incompatible_with = PackedStringArray("acid_beam", "volt_lightning")

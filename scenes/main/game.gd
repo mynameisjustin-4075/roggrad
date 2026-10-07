@@ -15,6 +15,7 @@ const SPAWNS_PER_EXTRA_PLAYER := 0.25
 const FROST_LANCE_SLOW := 0.8
 const FROST_WAKE_SLOW := 0.6
 const SLOW_DURATION := 2.0
+const LIGHTNING_COLOR := Color(0.75, 0.9, 1.0)
 
 @export var world: WorldData
 
@@ -347,9 +348,6 @@ func _collide() -> void:
 func _bullet_hit_enemy(b: Bullet, e: Enemy) -> void:
 	var run := b.owner_run
 	match b.kind:
-		"bolt":
-			e.take_damage(b.damage, run)
-			_chain_lightning(e, b.damage * 0.7, 1 + run.primary_level(), run)
 		"lance":
 			_frost_hit(e, b.damage, run)
 		_:
@@ -371,10 +369,23 @@ func _apply_on_hit(e: Enemy, damage: float, run: PlayerRun) -> void:
 		var target := _nearest_enemy(e.position, 70.0, [e])
 		if target:
 			target.take_damage(damage * 0.5, run)
-			_effect("arc", e.position, 0.15, 0.0, Color(1, 0.95, 0.4), target.position)
+			_effect("arc", e.position, 0.15, 0.0, LIGHTNING_COLOR, target.position)
 
 
-## Lightning Bolt: jump from enemy to enemy, never hitting the same one twice.
+func nearest_enemy(from: Vector2, max_dist: float) -> Enemy:
+	return _nearest_enemy(from, max_dist, [])
+
+
+## Lightning: arc from the ship to the target, then chain onward.
+func lightning_zap(p: Player, target: Enemy, damage: float) -> void:
+	var run := p.run
+	_effect("arc", p.position + Vector2(6, 0), 0.2, 0.0, LIGHTNING_COLOR, target.position)
+	target.take_damage(damage, run)
+	_apply_on_hit(target, damage, run)
+	_chain_lightning(target, damage * 0.7, 1 + run.primary_level(), run)
+
+
+## Jump from enemy to enemy, never hitting the same one twice.
 func _chain_lightning(from_e: Enemy, damage: float, jumps: int, run: PlayerRun) -> void:
 	var hit: Array = [from_e]
 	var cur := from_e
@@ -382,7 +393,7 @@ func _chain_lightning(from_e: Enemy, damage: float, jumps: int, run: PlayerRun) 
 		var target := _nearest_enemy(cur.position, 80.0, hit)
 		if target == null:
 			return
-		_effect("arc", cur.position, 0.15, 0.0, Color(1, 0.95, 0.4), target.position)
+		_effect("arc", cur.position, 0.2, 0.0, LIGHTNING_COLOR, target.position)
 		target.take_damage(damage, run)
 		hit.append(target)
 		cur = target

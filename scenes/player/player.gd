@@ -17,7 +17,7 @@ const BEAM_HALF_WIDTH := 2.0
 ## Main-shot stats per primary weapon. Damage is per projectile (per second for the beam).
 const WEAPONS := {
 	"": {"interval": 0.12, "speed": 380.0, "damage": 0.75, "kind": "pellet"},
-	"volt_lightning": {"interval": 1.0, "speed": 700.0, "damage": 8.0, "kind": "bolt"},
+	"volt_lightning": {"interval": 1.0, "damage": 8.0, "kind": "zap", "range": 200.0},
 	"cryo_lance": {"interval": 0.28, "speed": 240.0, "damage": 3.5, "kind": "lance"},
 	"nova_missiles": {"interval": 0.75, "speed": 180.0, "damage": 9.0, "kind": "missile"},
 	"acid_beam": {"damage": 8.0, "kind": "beam"},
@@ -92,6 +92,9 @@ func _physics_process(delta: float) -> void:
 
 func _fire() -> void:
 	var w := weapon()
+	if w.kind == "zap":
+		_zap(w)
+		return
 	fire_timer = w.interval / fire_rate_mult()
 	shot_count += 1
 	var dmg: float = w.damage * level_mult()
@@ -109,6 +112,17 @@ func _fire() -> void:
 			_shoot(Vector2(8, 0), 10.0 * i * side, w.speed, dmg * 0.6, opts)
 	if run.stacks("nova_payload") > 0 and shot_count % 5 == 0:
 		_shoot(Vector2.ZERO, 0.0, 220.0, 3.0, {"kind": "missile", "explode": 20.0})
+
+
+## Tesla-coil Lightning: arc from the ship to the nearest enemy in range, in any
+## direction. With nothing in range it stays charged and zaps as soon as one is.
+func _zap(w: Dictionary) -> void:
+	var target = game.nearest_enemy(position, w.range)
+	if target == null:
+		return
+	fire_timer = w.interval / fire_rate_mult()
+	shot_count += 1
+	game.lightning_zap(self, target, w.damage * level_mult())
 
 
 func _shoot(offset: Vector2, angle_deg: float, speed: float, dmg: float, opts: Dictionary) -> void:
