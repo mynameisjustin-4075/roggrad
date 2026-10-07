@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://data/world_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/rooms/room_01.tres" id="2_r1"]
+[ext_resource type="Resource" path="res://data/rooms/room_02.tres" id="3_r2"]
+[ext_resource type="Resource" path="res://data/rooms/room_03.tres" id="4_r3"]
+[ext_resource type="Resource" path="res://data/rooms/boss_01.tres" id="5_boss"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Debris Belt"
+boss_name = "SALVAGE LEVIATHAN"
+rooms = [ExtResource("2_r1"), ExtResource("3_r2"), ExtResource("4_r3"), ExtResource("5_boss")]

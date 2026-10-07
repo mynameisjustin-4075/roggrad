@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RoomData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/room_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Debris Belt - Room 1"
+scroll_speed = 40.0
+is_boss = false
+waves = [{"time": 1.0, "enemy": "grunt", "count": 5, "interval": 0.35, "y": 70, "dy": 0}, {"time": 4.0, "enemy": "grunt", "count": 5, "interval": 0.35, "y": 200, "dy": 0}, {"time": 7.0, "enemy": "diver", "count": 3, "interval": 0.6, "y": 60, "dy": 70}, {"time": 10.0, "enemy": "gunner", "count": 1, "interval": 0, "y": 90, "dy": 0}, {"time": 10.5, "enemy": "gunner", "count": 1, "interval": 0, "y": 180, "dy": 0}, {"time": 13.0, "enemy": "grunt", "count": 6, "interval": 0.3, "y": 135, "dy": 0}]

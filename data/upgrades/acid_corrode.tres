@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "acid_corrode"
+display_name = "Corrosive Rounds"
+description = "Hits stack burning acid (up to 5 stacks), dealing damage over time. More levels burn hotter."
+family = "Acid/Fire"
+rarity = 0
+max_stacks = 3
