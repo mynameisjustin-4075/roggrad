@@ -83,7 +83,7 @@ func _check_abilities(game: Game, p: Player) -> void:
 	Input.action_release("dodge")
 	print("Dodge: moved %.0f px, hittable during dodge: %s, second dodge blocked: %s, hittable after: %s" % [
 		moved, hittable_during, p.dodge_cooldown > 0.0 and p.dodge_iframes == 0.0, p.can_be_hit()])
-	# Secondary: charge 0.5 s, release -> one shot and a 4 s cooldown; retry is blocked.
+	# Secondary: a tap fires one shot and starts a 4 s cooldown; a retry is blocked.
 	var before := game.player_bullets.get_child_count()
 	Input.action_press("secondary")
 	await _frames(30, game)

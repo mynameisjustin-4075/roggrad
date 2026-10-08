@@ -42,7 +42,6 @@ var fire_timer := 0.0
 var drone_timer := 0.0
 var invuln := 0.0
 var shot_count := 0
-var charge := 0.0
 var focused := false
 var beam_on := false
 var beam_end_x := 480.0
@@ -86,6 +85,7 @@ func fire_rate_mult() -> float:
 func _physics_process(delta: float) -> void:
 	var bomb_pressed := ctl.pressed("bomb")
 	var dodge_pressed := ctl.pressed("dodge")
+	var secondary_pressed := ctl.pressed("secondary")
 	beam_on = false
 	if not run.alive:
 		return
@@ -113,7 +113,7 @@ func _physics_process(delta: float) -> void:
 			_fire()
 		if firing and drone_timer <= 0.0:
 			_fire_drones()
-		_update_secondary(delta)
+		_update_secondary(secondary_pressed)
 		if bomb_pressed and run.bombs > 0:
 			run.bombs -= 1
 			game.bomb(self)
@@ -192,18 +192,12 @@ func _dodge() -> void:
 	dodge_cooldown = DODGE_COOLDOWN
 
 
-func _update_secondary(delta: float) -> void:
-	if secondary_cooldown > 0.0:
-		charge = 0.0
+func _update_secondary(secondary_pressed: bool) -> void:
+	if not secondary_pressed or secondary_cooldown > 0.0:
 		return
-	# Charge Beam: hold to charge (up to 1 s), release to fire a piercing shot.
-	if ctl.down("secondary"):
-		charge = minf(charge + delta, 1.0)
-	elif charge > 0.0:
-		if charge >= 0.3:
-			_shoot(Vector2(12, 0), 0.0, 300.0, 10.0 * charge, {"kind": "charge", "radius": 3.0 + 4.0 * charge, "pierce": 99})
-			secondary_cooldown = secondary().cooldown
-		charge = 0.0
+	# Charge Beam: a tap fires the full-power piercing shot.
+	_shoot(Vector2(12, 0), 0.0, 300.0, 10.0, {"kind": "charge", "radius": 7.0, "pierce": 99})
+	secondary_cooldown = secondary().cooldown
 
 
 func take_hit() -> void:
@@ -252,8 +246,6 @@ func _draw() -> void:
 			draw_colored_polygon(_ship_shape(ghost, roll), Color(color, 0.35 / i))
 	draw_colored_polygon(_ship_shape(Vector2.ZERO, roll), color)
 	draw_rect(Rect2(-10, -1, 3, 2), Color(1, 0.6, 0.2) if Engine.get_physics_frames() % 4 < 2 else Color(1, 0.9, 0.4))
-	if charge >= 0.3:
-		draw_circle(Vector2(12, 0), 2.0 + 3.0 * charge, Color(1, 1, 1, 0.7))
 	if focused:
 		draw_circle(Vector2.ZERO, HITBOX + 1.0, Color.WHITE)
 		draw_circle(Vector2.ZERO, HITBOX, Color.RED)
