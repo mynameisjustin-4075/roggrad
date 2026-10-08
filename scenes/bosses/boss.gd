@@ -39,13 +39,13 @@ func _update_fire(delta: float) -> void:
 		if p:
 			var dir: Vector2 = (p.position - position).normalized()
 			for a in [-0.25, 0.0, 0.25]:
-				game.spawn_enemy_bullet(position + Vector2(-20, 0), dir.rotated(a) * 100.0)
+				game.spawn_enemy_bullet(position + Vector2(-20, 0), dir.rotated(a) * 100.0, self)
 	if phase == 2:
 		ring_timer -= delta
 		if ring_timer <= 0.0:
 			ring_timer = 1.8
 			for i in 14:
-				game.spawn_enemy_bullet(position, Vector2.from_angle(TAU * i / 14.0 + t) * 70.0)
+				game.spawn_enemy_bullet(position, Vector2.from_angle(TAU * i / 14.0 + t) * 70.0, self)
 
 
 func _draw() -> void:

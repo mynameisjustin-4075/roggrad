@@ -12,6 +12,8 @@ const DODGE_SPEED := 380.0
 const DODGE_DASH_TIME := 0.15
 const DODGE_IFRAMES := 0.35
 const DODGE_COOLDOWN := 1.2
+## An enemy bullet passing this close counts as a graze (Phase Shift).
+const GRAZE_RADIUS := 12.0
 ## Drones copy the main weapon's shot at this fraction of its damage.
 const DRONE_DAMAGE_MULT := 0.5
 ## Drone slots: alternate above and below the ship, second pair further out.
@@ -39,6 +41,7 @@ const SECONDARIES := {
 	"cryo_ice": {"cooldown": 6.0, "damage": 4.0, "radius": 52.0, "freeze": 3.0, "speed": 220.0, "fuse": 0.8},
 	"nova_homing": {"cooldown": 6.0, "damage": 3.0, "count": 6, "radius": 12.0, "speed": 200.0, "fuse": 3.0},
 	"swarm_strike": {"cooldown": 12.0, "duration": 6.0, "extra_drones": 2},
+	"aegis_repulsor": {"cooldown": 6.0, "radius": 90.0, "bullet_damage": 2.0, "blast_damage": 2.0},
 }
 ## Dodge upgrades by upgrade id; "" is the plain dodge.
 const DODGES := {
@@ -47,6 +50,7 @@ const DODGES := {
 	"cryo_frost_step": {"slow": 0.5, "duration": 2.0, "reach": 30.0},
 	"nova_afterburner": {"damage": 6.0, "radius": 28.0},
 	"swarm_decoy": {"duration": 2.0, "damage": 6.0, "radius": 32.0},
+	"aegis_phase": {"extra_iframes": 0.2, "refund": 0.5},
 }
 
 var run: PlayerRun
@@ -70,6 +74,8 @@ var dodge_iframes := 0.0
 var _dodge_dash := 0.0
 var _dodge_dir := Vector2.ZERO
 var _dodge_hits: Array = []  # enemies already zapped by this Static Dash
+var _dodge_iframes_total := DODGE_IFRAMES
+var _grazed := false  # Phase Shift refund already used this dodge
 
 
 func setup(p_run: PlayerRun, p_game, p_color: Color) -> void:
@@ -264,9 +270,13 @@ func _update_beam(delta: float) -> void:
 func _dodge() -> void:
 	_dodge_dir = ctl.move().normalized()
 	_dodge_dash = DODGE_DASH_TIME if _dodge_dir != Vector2.ZERO else 0.0
-	dodge_iframes = DODGE_IFRAMES
+	_dodge_iframes_total = DODGE_IFRAMES
+	if run.dodge == "aegis_phase":
+		_dodge_iframes_total += DODGES[run.dodge].extra_iframes * slot_effect_mult("dodge")
+	dodge_iframes = _dodge_iframes_total
 	dodge_cooldown = dodge_cooldown_time()
 	_dodge_hits.clear()
+	_grazed = false
 	match run.dodge:
 		"nova_afterburner":
 			var d: Dictionary = DODGES[run.dodge]
@@ -274,6 +284,16 @@ func _dodge() -> void:
 		"swarm_decoy":
 			var d: Dictionary = DODGES[run.dodge]
 			game.spawn_decoy(self, position, d.duration, d.damage * slot_effect_mult("dodge"), d.radius)
+
+
+## An enemy bullet passed close by. With Phase Shift, the first graze during a
+## dodge refunds half the dodge cooldown.
+func on_graze(at: Vector2) -> void:
+	if run.dodge != "aegis_phase" or dodge_iframes <= 0.0 or _grazed:
+		return
+	_grazed = true
+	dodge_cooldown = maxf(dodge_cooldown - dodge_cooldown_time() * DODGES[run.dodge].refund, 0.0)
+	game.graze_spark(at)
 
 
 ## Per-frame dodge-upgrade effects while the dodge's invulnerability lasts.
@@ -296,6 +316,9 @@ func _update_secondary(secondary_pressed: bool) -> void:
 	match run.secondary:
 		"volt_storm":
 			game.storm_burst(self, s.damage * slot_effect_mult("secondary"), s.targets, s.range)
+		"aegis_repulsor":
+			var m := slot_effect_mult("secondary")
+			game.repulsor(self, s.radius, s.bullet_damage * m, s.blast_damage * m)
 		"swarm_strike":
 			strike_timer = s.duration * slot_effect_mult("secondary")
 		"nova_homing":
@@ -360,7 +383,7 @@ func _draw() -> void:
 	var roll := 1.0
 	if dodge_iframes > 0.0:
 		# Barrel roll: squash the ship vertically and leave afterimages.
-		var progress := 1.0 - dodge_iframes / DODGE_IFRAMES
+		var progress := 1.0 - dodge_iframes / _dodge_iframes_total
 		roll = maxf(absf(cos(progress * TAU)), 0.2)
 		for i in [1, 2]:
 			var ghost: Vector2 = -_dodge_dir * 7.0 * i

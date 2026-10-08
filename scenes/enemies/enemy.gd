@@ -110,7 +110,7 @@ func _update_fire(delta: float) -> void:
 		fire_timer = fire_interval
 		var p = game.aim_target(position)
 		if p:
-			game.spawn_enemy_bullet(position, (p.position - position).normalized() * 90.0)
+			game.spawn_enemy_bullet(position, (p.position - position).normalized() * 90.0, self)
 
 
 func add_acid(power: int, source: PlayerRun) -> void:

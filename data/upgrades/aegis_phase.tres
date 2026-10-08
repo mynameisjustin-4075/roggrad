@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "aegis_phase"
+display_name = "Phase Shift"
+description = "+0.2 s of dodge invulnerability. Grazing a bullet during a dodge refunds half the dodge cooldown. Each level: longer invulnerability, -10% dodge cooldown."
+family = "Aegis"
+rarity = 0
+max_stacks = 3
+slot = "dodge"
+incompatible_with = PackedStringArray()

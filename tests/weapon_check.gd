@@ -163,6 +163,7 @@ func _check_volt(game: Game, p: Player) -> void:
 	await _check_cryo(game, p)
 	await _check_nova(game, p)
 	await _check_swarm(game, p)
+	await _check_aegis(game, p)
 
 
 func _equip(game: Game, run: PlayerRun, id: String) -> void:
@@ -309,3 +310,41 @@ func _check_swarm(game: Game, p: Player) -> void:
 	await _frames(130, game)
 	print("Decoy: enemies aim at decoy %s, decoy exploded on the dummy beside it (damage %.1f), aim back on player %s" % [
 		aims_decoy, beside.max_hp - beside.hp, game.aim_target(gunner.position) == p])
+
+
+func _check_aegis(game: Game, p: Player) -> void:
+	p.run.upgrades.erase("swarm_option")
+	_equip(game, p.run, "aegis_repulsor")
+	_equip(game, p.run, "aegis_phase")
+	_clear_enemies(game)
+	game._clear_enemy_bullets()
+	await _frames(400, game)
+	# Repulsor: 3 bullets from a distant gunner near the ship, 1 stray far away.
+	p.position = Vector2(100, 135)
+	var gunner := _spawn_dummy(game, Vector2(380, 60))
+	for off in [Vector2(30, 0), Vector2(20, -40), Vector2(-30, 30)]:
+		game.spawn_enemy_bullet(p.position + off, Vector2.ZERO, gunner)
+	game.spawn_enemy_bullet(Vector2(400, 250), Vector2.ZERO, gunner)
+	await _frames(1, game)
+	Input.action_press("secondary")
+	await _frames(2, game)
+	Input.action_release("secondary")
+	var reflected := game.player_bullets.get_children().filter(func(b): return b.kind == "reflect").size()
+	var enemy_left := game.enemy_bullets.get_children().filter(func(b): return not b.is_queued_for_deletion()).size()
+	await _frames(150, game)
+	print("Repulsor: reflected %d/3, stray bullet kept %s, shooter took %.1f damage" % [
+		reflected, enemy_left == 1, gunner.max_hp - gunner.hp])
+	# Phase Shift: longer i-frames; a bullet grazing the ship refunds half the cooldown.
+	_clear_enemies(game)
+	game._clear_enemy_bullets()
+	await _frames(100, game)
+	p.position = Vector2(200, 135)
+	Input.action_press("dodge")
+	await _frames(2, game)
+	Input.action_release("dodge")
+	var iframes := p._dodge_iframes_total
+	var cd_before := p.dodge_cooldown
+	game.spawn_enemy_bullet(p.position + Vector2(8, 0), Vector2.ZERO)
+	await _frames(2, game)
+	print("Phase Shift: i-frames %.2f s, cooldown %.2f -> %.2f s after graze, hull %d/%d" % [
+		iframes, cd_before, p.dodge_cooldown, p.run.hull, p.run.max_hull])

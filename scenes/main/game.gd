@@ -17,6 +17,7 @@ const FROST_WAKE_SLOW := 0.6
 const SLOW_DURATION := 2.0
 const LIGHTNING_COLOR := Color(0.75, 0.9, 1.0)
 const ICE_COLOR := Color(0.55, 0.85, 1.0)
+const AEGIS_COLOR := Color(0.85, 0.9, 1.0)
 
 @export var world: WorldData
 
@@ -335,14 +336,16 @@ func spawn_player_bullet(pos: Vector2, vel: Vector2, damage: float, run: PlayerR
 	b.pierce_left = opts.get("pierce", 0)
 	b.fuse = opts.get("fuse", 0.0)
 	b.freeze_time = opts.get("freeze", 0.0)
-	if b.kind == "homing":
+	if b.kind == "homing" or b.kind == "reflect":
 		b.game = self
 		b.rotation = vel.angle()
+		b.target = opts.get("target", null)
 	player_bullets.add_child(b)
 
 
-func spawn_enemy_bullet(pos: Vector2, vel: Vector2) -> void:
+func spawn_enemy_bullet(pos: Vector2, vel: Vector2, shooter: Node2D = null) -> void:
 	var b := Bullet.new()
+	b.shooter = shooter
 	b.position = pos
 	b.vel = vel
 	b.radius = 3.0
@@ -376,10 +379,13 @@ func _collide() -> void:
 		if b.is_queued_for_deletion():
 			continue
 		for p in players:
-			if p.can_be_hit() and b.position.distance_to(p.position) < b.radius + Player.HITBOX:
+			var dist: float = b.position.distance_to(p.position)
+			if p.can_be_hit() and dist < b.radius + Player.HITBOX:
 				p.take_hit()
 				b.queue_free()
 				break
+			if dist < b.radius + Player.GRAZE_RADIUS:
+				p.on_graze(b.position)
 	for e in enemies.get_children():
 		if e.dead:
 			continue
@@ -457,6 +463,31 @@ func _ice_blast(b: Bullet) -> void:
 			e.freeze(b.freeze_time)
 			e.take_damage(b.damage, b.owner_run)
 	b.queue_free()
+
+
+## Phase Shift graze feedback: a small bright flash where the bullet passed.
+func graze_spark(at: Vector2) -> void:
+	_effect("explosion", at, 0.2, 8.0, AEGIS_COLOR)
+
+
+## Aegis secondary, Repulsor: every enemy bullet within `radius` is sent back,
+## steering toward the enemy that fired it; enemies in the blast take damage.
+func repulsor(p: Player, radius: float, bullet_damage: float, blast_damage: float) -> int:
+	_effect("ring", p.position, 0.3, radius, AEGIS_COLOR)
+	var returned := 0
+	for b in enemy_bullets.get_children():
+		if b.is_queued_for_deletion() or b.position.distance_to(p.position) > radius:
+			continue
+		var target = b.shooter if is_instance_valid(b.shooter) and not b.shooter.dead else null
+		var dir: Vector2 = (target.position - b.position).normalized() if target else -b.vel.normalized()
+		spawn_player_bullet(b.position, dir * 220.0, bullet_damage, p.run, {
+			"kind": "reflect", "radius": 3.0, "target": target, "fuse": 3.0})
+		b.queue_free()
+		returned += 1
+	for e in enemies.get_children():
+		if not e.dead and e.position.distance_to(p.position) <= radius + e.radius:
+			e.take_damage(blast_damage, p.run)
+	return returned
 
 
 ## Nova dodge, Afterburner: an explosion where the dash started.

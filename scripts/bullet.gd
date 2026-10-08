@@ -2,7 +2,8 @@ class_name Bullet
 extends Node2D
 ## A player or enemy projectile. Collision is checked by the game, not physics.
 ## Player kinds: "pellet", "lance" (ice), "missile", "charge", "ice_bomb",
-## "homing" (Homing Cluster: steers toward the nearest enemy, retargets when it dies).
+## "homing" (Homing Cluster: steers toward the nearest enemy, retargets when it dies),
+## "reflect" (Repulsor: an enemy bullet sent back, steering toward its shooter).
 
 const MISSILE_TOP_SPEED := 420.0
 const MISSILE_ACCEL := 600.0
@@ -25,6 +26,8 @@ var freeze_time := 0.0
 var game = null
 var target: Node2D = null
 var turn_rate := 5.0
+## Enemy bullets: the enemy that fired it (for Repulsor to send it back).
+var shooter: Node2D = null
 
 
 func _physics_process(delta: float) -> void:
@@ -34,7 +37,7 @@ func _physics_process(delta: float) -> void:
 		fuse -= delta
 		if fuse <= 0.0:
 			fuse_done = true
-	if kind == "homing":
+	if kind == "homing" or kind == "reflect":
 		_steer(delta)
 	position += vel * delta
 	if kind == "ice_bomb":
@@ -61,6 +64,9 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius * 0.5, Color.WHITE)
 		return
 	match kind:
+		"reflect":
+			draw_circle(Vector2.ZERO, 3.0, color)
+			draw_circle(Vector2.ZERO, 1.5, Color.WHITE)
 		"homing":
 			draw_rect(Rect2(-3, -1, 6, 2), Color(1, 0.75, 0.3))
 			draw_rect(Rect2(-5 - randf() * 2.0, -0.5, 2, 1), Color(1, 0.95, 0.5))
