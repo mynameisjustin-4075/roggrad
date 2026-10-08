@@ -308,6 +308,9 @@ func spawn_player_bullet(pos: Vector2, vel: Vector2, damage: float, run: PlayerR
 	b.pierce_left = opts.get("pierce", 0)
 	b.fuse = opts.get("fuse", 0.0)
 	b.freeze_time = opts.get("freeze", 0.0)
+	if b.kind == "homing":
+		b.game = self
+		b.rotation = vel.angle()
 	player_bullets.add_child(b)
 
 
@@ -326,7 +329,11 @@ func _collide() -> void:
 		if b.is_queued_for_deletion():
 			continue
 		if b.fuse_done:
-			_ice_blast(b)
+			if b.kind == "ice_bomb":
+				_ice_blast(b)
+			else:
+				_explode(b.position, b.explode_radius, b.damage, b.owner_run)
+				b.queue_free()
 			continue
 		for e in enemies.get_children():
 			if e.dead or e in b.hit_list:
@@ -421,6 +428,11 @@ func _ice_blast(b: Bullet) -> void:
 			e.freeze(b.freeze_time)
 			e.take_damage(b.damage, b.owner_run)
 	b.queue_free()
+
+
+## Nova dodge, Afterburner: an explosion where the dash started.
+func afterburner(p: Player, pos: Vector2, damage: float, radius: float) -> void:
+	_explode(pos, radius, damage, p.run)
 
 
 ## Cryo dodge, Frost Step: enemies near the dodging ship are slowed.

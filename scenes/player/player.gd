@@ -33,12 +33,14 @@ const SECONDARIES := {
 	"": {"cooldown": 4.0},
 	"volt_storm": {"cooldown": 5.0, "damage": 6.0, "targets": 6, "range": 150.0},
 	"cryo_ice": {"cooldown": 6.0, "damage": 4.0, "radius": 52.0, "freeze": 3.0, "speed": 220.0, "fuse": 0.8},
+	"nova_homing": {"cooldown": 6.0, "damage": 3.0, "count": 6, "radius": 12.0, "speed": 200.0, "fuse": 3.0},
 }
 ## Dodge upgrades by upgrade id; "" is the plain dodge.
 const DODGES := {
 	"": {},
 	"volt_static": {"damage": 5.0, "reach": 30.0},
 	"cryo_frost_step": {"slow": 0.5, "duration": 2.0, "reach": 30.0},
+	"nova_afterburner": {"damage": 6.0, "radius": 28.0},
 }
 
 var run: PlayerRun
@@ -213,6 +215,9 @@ func _dodge() -> void:
 	dodge_iframes = DODGE_IFRAMES
 	dodge_cooldown = dodge_cooldown_time()
 	_dodge_hits.clear()
+	if run.dodge == "nova_afterburner":
+		var d: Dictionary = DODGES[run.dodge]
+		game.afterburner(self, position, d.damage * slot_effect_mult("dodge"), d.radius)
 
 
 ## Per-frame dodge-upgrade effects while the dodge's invulnerability lasts.
@@ -235,6 +240,13 @@ func _update_secondary(secondary_pressed: bool) -> void:
 	match run.secondary:
 		"volt_storm":
 			game.storm_burst(self, s.damage * slot_effect_mult("secondary"), s.targets, s.range)
+		"nova_homing":
+			# Fan the missiles out from the ship; they then curve onto targets.
+			var m := slot_effect_mult("secondary")
+			for i in s.count:
+				var angle := lerpf(-60.0, 60.0, float(i) / maxi(s.count - 1, 1))
+				_shoot(Vector2(4, 0), angle, s.speed, s.damage * m, {
+					"kind": "homing", "explode": s.radius, "fuse": s.fuse})
 		"cryo_ice":
 			# Bomb: bursts on the first enemy it touches, or after its fuse.
 			var m := slot_effect_mult("secondary")

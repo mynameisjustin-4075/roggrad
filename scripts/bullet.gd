@@ -1,7 +1,8 @@
 class_name Bullet
 extends Node2D
 ## A player or enemy projectile. Collision is checked by the game, not physics.
-## Player kinds: "pellet", "lance" (ice), "missile", "charge", "ice_bomb".
+## Player kinds: "pellet", "lance" (ice), "missile", "charge", "ice_bomb",
+## "homing" (Homing Cluster: steers toward the nearest enemy, retargets when it dies).
 
 const MISSILE_TOP_SPEED := 420.0
 const MISSILE_ACCEL := 600.0
@@ -20,6 +21,10 @@ var hit_list: Array = []
 var fuse := 0.0
 var fuse_done := false
 var freeze_time := 0.0
+## Homing missiles: the game (for finding targets), current target, turn speed.
+var game = null
+var target: Node2D = null
+var turn_rate := 5.0
 
 
 func _physics_process(delta: float) -> void:
@@ -29,13 +34,25 @@ func _physics_process(delta: float) -> void:
 		fuse -= delta
 		if fuse <= 0.0:
 			fuse_done = true
+	if kind == "homing":
+		_steer(delta)
 	position += vel * delta
 	if kind == "ice_bomb":
 		rotation += 8.0 * delta
 	if position.x < -16 or position.x > 496 or position.y < -16 or position.y > 286:
 		queue_free()
-	if kind == "missile":
+	if kind == "missile" or kind == "homing":
 		queue_redraw()
+
+
+func _steer(delta: float) -> void:
+	if target == null or not is_instance_valid(target) or target.dead:
+		target = game.nearest_enemy(position, INF)
+	if target:
+		var want := (target.position - position).angle()
+		var turn := clampf(wrapf(want - vel.angle(), -PI, PI), -turn_rate * delta, turn_rate * delta)
+		vel = vel.rotated(turn)
+	rotation = vel.angle()
 
 
 func _draw() -> void:
@@ -44,6 +61,9 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius * 0.5, Color.WHITE)
 		return
 	match kind:
+		"homing":
+			draw_rect(Rect2(-3, -1, 6, 2), Color(1, 0.75, 0.3))
+			draw_rect(Rect2(-5 - randf() * 2.0, -0.5, 2, 1), Color(1, 0.95, 0.5))
 		"ice_bomb":
 			draw_colored_polygon(PackedVector2Array([Vector2(5, 0), Vector2(0, -5), Vector2(-5, 0), Vector2(0, 5)]), Color(0.6, 0.9, 1.0))
 			draw_rect(Rect2(-1.5, -1.5, 3, 3), Color.WHITE)

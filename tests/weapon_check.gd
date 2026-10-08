@@ -161,6 +161,7 @@ func _check_volt(game: Game, p: Player) -> void:
 		[near_a, near_b].filter(func(e): return e.hp < e.max_hp).size(),
 		near_a.max_hp - near_a.hp, far.hp == far.max_hp, p.dodge_cooldown_time()])
 	await _check_cryo(game, p)
+	await _check_nova(game, p)
 
 
 func _equip(game: Game, run: PlayerRun, id: String) -> void:
@@ -220,3 +221,35 @@ func _check_cryo(game: Game, p: Player) -> void:
 	await _frames(2, game)
 	Input.action_release("dodge")
 	print("Frost Step: near slowed to %.1f for %.1f s, far slowed: %s" % [near.slow_mult, near.slow_timer, far.slow_timer > 0.0])
+
+
+func _check_nova(game: Game, p: Player) -> void:
+	_equip(game, p.run, "nova_homing")
+	_equip(game, p.run, "nova_afterburner")
+	_clear_enemies(game)
+	await _frames(400, game)
+	# Homing Cluster: a fragile dummy ahead dies to the first hits; the rest
+	# of the swarm must retarget onto a tough dummy behind the ship.
+	p.position = Vector2(200, 135)
+	var fragile := _spawn_dummy(game, Vector2(300, 135))
+	fragile.hp = 2.0
+	var behind := _spawn_dummy(game, Vector2(80, 60))
+	Input.action_press("secondary")
+	await _frames(2, game)
+	Input.action_release("secondary")
+	var fired := game.player_bullets.get_children().filter(func(b): return b.kind == "homing").size()
+	await _frames(240, game)
+	print("Homing Cluster: fired %d, fragile destroyed %s, retargeted onto enemy behind (damage %.1f), cooldown %.1f s" % [
+		fired, not is_instance_valid(fragile) or fragile.dead, behind.max_hp - behind.hp, p.secondary_cooldown])
+	# Afterburner: dash away from a dummy sitting at the start point.
+	_clear_enemies(game)
+	await _frames(100, game)
+	p.position = Vector2(150, 135)
+	var at_start := _spawn_dummy(game, Vector2(165, 145))
+	var far := _spawn_dummy(game, Vector2(400, 40))
+	Input.action_press("move_left")
+	Input.action_press("dodge")
+	await _frames(2, game)
+	Input.action_release("dodge")
+	Input.action_release("move_left")
+	print("Afterburner: start-point damage %.1f, far untouched %s" % [at_start.max_hp - at_start.hp, far.hp == far.max_hp])
