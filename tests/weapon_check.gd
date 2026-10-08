@@ -204,11 +204,12 @@ func _check_cryo(game: Game, p: Player) -> void:
 	boss.setup_boss(1.0)
 	boss.position = Vector2(380, 135)
 	game.enemies.add_child(boss)
-	boss.freeze(3.0)
-	var first := boss.frozen_timer
-	boss.frozen_timer = 0.0
-	boss.freeze(3.0)
-	print("Boss freeze: first %.2f s, second %.2f s" % [first, boss.frozen_timer])
+	var durations: Array = []
+	for i in 5:
+		boss.frozen_timer = 0.0
+		boss.freeze(3.0)
+		durations.append(snappedf(boss.frozen_timer, 0.01))
+	print("Boss freeze, 5 bombs in a row: %s s" % str(durations))
 	# Frost Step: dodge next to a dummy -> slowed to 0.5 for 2 s.
 	_clear_enemies(game)
 	await _frames(100, game)

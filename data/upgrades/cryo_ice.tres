@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 id = "cryo_ice"
 display_name = "Ice Blast"
-description = "Fire a bomb that bursts on impact or after a short flight, freezing every enemy in the blast for 3 s. Bosses resist repeated freezes. 6 s cooldown. Each level: +25% blast size and damage, -10% cooldown."
+description = "Fire a bomb that bursts on impact or after a short flight, freezing every enemy in a wide blast for 3 s. Bosses freeze for less each time and become immune after 3 freezes. 6 s cooldown. Each level: +25% blast size and damage, -10% cooldown."
 family = "Cryo"
 rarity = 1
 max_stacks = 3

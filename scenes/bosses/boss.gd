@@ -19,8 +19,7 @@ func setup_boss(hp_mult: float) -> void:
 	fire_interval = 1.1
 	fire_timer = 2.0
 	freeze_resist = 0.5
-	freeze_resist_max = 0.5
-	freeze_diminishes = true
+	max_freezes = 3  # 1.5 s, 1.0 s, 0.5 s, then immune for the fight
 
 func _move(delta: float) -> void:
 	if position.x > 400.0:

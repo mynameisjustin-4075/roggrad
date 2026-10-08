@@ -32,7 +32,7 @@ const WEAPONS := {
 const SECONDARIES := {
 	"": {"cooldown": 4.0},
 	"volt_storm": {"cooldown": 5.0, "damage": 6.0, "targets": 6, "range": 150.0},
-	"cryo_ice": {"cooldown": 6.0, "damage": 4.0, "radius": 40.0, "freeze": 3.0, "speed": 220.0, "fuse": 0.8},
+	"cryo_ice": {"cooldown": 6.0, "damage": 4.0, "radius": 52.0, "freeze": 3.0, "speed": 220.0, "fuse": 0.8},
 }
 ## Dodge upgrades by upgrade id; "" is the plain dodge.
 const DODGES := {

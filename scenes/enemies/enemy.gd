@@ -34,11 +34,12 @@ var acid_power := 0
 var acid_timer := 0.0
 var acid_owner: PlayerRun = null
 var frozen_timer := 0.0
-## Freeze durations are multiplied by this. Bosses start lower and halve it on
-## every freeze (diminishing returns), recovering slowly back to the max.
+## Freeze durations are multiplied by this.
 var freeze_resist := 1.0
-var freeze_resist_max := 1.0
-var freeze_diminishes := false
+## Diminishing returns (bosses): each freeze is shorter, and after this many
+## the enemy is immune for good. -1 = no limit.
+var max_freezes := -1
+var freezes_taken := 0
 
 
 func setup(p_kind: String, hp_mult: float) -> void:
@@ -59,7 +60,6 @@ func setup(p_kind: String, hp_mult: float) -> void:
 func _physics_process(delta: float) -> void:
 	if dead:
 		return
-	freeze_resist = minf(freeze_resist + 0.05 * delta, freeze_resist_max)
 	if frozen_timer > 0.0:
 		frozen_timer -= delta
 	else:
@@ -128,10 +128,15 @@ func apply_slow(mult: float, duration: float) -> void:
 
 
 ## Stop moving and firing for `duration` seconds (scaled by freeze_resist).
+## With max_freezes = 3: full, 2/3, 1/3 of the resisted duration, then immune.
 func freeze(duration: float) -> void:
-	frozen_timer = maxf(frozen_timer, duration * freeze_resist)
-	if freeze_diminishes:
-		freeze_resist *= 0.5
+	var mult := freeze_resist
+	if max_freezes >= 0:
+		if freezes_taken >= max_freezes:
+			return
+		mult *= 1.0 - float(freezes_taken) / max_freezes
+		freezes_taken += 1
+	frozen_timer = maxf(frozen_timer, duration * mult)
 
 
 func _tick_acid(delta: float) -> void:
