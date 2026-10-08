@@ -3,7 +3,8 @@ extends Node2D
 ## A player or enemy projectile. Collision is checked by the game, not physics.
 ## Player kinds: "pellet", "lance" (ice), "missile", "charge", "ice_bomb",
 ## "homing" (Homing Cluster: steers toward the nearest enemy, retargets when it dies),
-## "reflect" (Repulsor: an enemy bullet sent back, steering toward its shooter).
+## "reflect" (Repulsor: an enemy bullet sent back, steering toward its shooter),
+## "canister" (Napalm Line: lands on impact or at its fuse and leaves a fire strip).
 
 const MISSILE_TOP_SPEED := 420.0
 const MISSILE_ACCEL := 600.0
@@ -28,6 +29,8 @@ var target: Node2D = null
 var turn_rate := 5.0
 ## Enemy bullets: the enemy that fired it (for Repulsor to send it back).
 var shooter: Node2D = null
+## Ability-specific values carried to where the shot lands (e.g. Napalm Line).
+var extra := {}
 
 
 func _physics_process(delta: float) -> void:
@@ -64,6 +67,9 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius * 0.5, Color.WHITE)
 		return
 	match kind:
+		"canister":
+			draw_rect(Rect2(-4, -2, 8, 4), Color(0.9, 0.5, 0.15))
+			draw_rect(Rect2(-1, -2, 2, 4), Color(0.7, 1.0, 0.3))
 		"reflect":
 			draw_circle(Vector2.ZERO, 3.0, color)
 			draw_circle(Vector2.ZERO, 1.5, Color.WHITE)

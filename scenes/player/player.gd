@@ -42,6 +42,7 @@ const SECONDARIES := {
 	"nova_homing": {"cooldown": 6.0, "damage": 3.0, "count": 6, "radius": 12.0, "speed": 200.0, "fuse": 3.0},
 	"swarm_strike": {"cooldown": 12.0, "duration": 6.0, "extra_drones": 2},
 	"aegis_repulsor": {"cooldown": 6.0, "radius": 90.0, "bullet_damage": 2.0, "blast_damage": 2.0},
+	"acid_napalm": {"cooldown": 7.0, "speed": 260.0, "fuse": 0.5, "width": 20.0, "duration": 4.0, "tick": 0.4, "power": 2},
 }
 ## Dodge upgrades by upgrade id; "" is the plain dodge.
 const DODGES := {
@@ -51,6 +52,7 @@ const DODGES := {
 	"nova_afterburner": {"damage": 6.0, "radius": 28.0},
 	"swarm_decoy": {"duration": 2.0, "damage": 6.0, "radius": 32.0},
 	"aegis_phase": {"extra_iframes": 0.2, "refund": 0.5},
+	"acid_scorch": {"radius": 9.0, "duration": 1.5, "power": 1, "damage": 0.5, "spacing": 8.0},
 }
 
 var run: PlayerRun
@@ -76,6 +78,7 @@ var _dodge_dir := Vector2.ZERO
 var _dodge_hits: Array = []  # enemies already zapped by this Static Dash
 var _dodge_iframes_total := DODGE_IFRAMES
 var _grazed := false  # Phase Shift refund already used this dodge
+var _last_scorch := Vector2.INF  # where Scorch Trail last dropped a patch
 
 
 func setup(p_run: PlayerRun, p_game, p_color: Color) -> void:
@@ -277,6 +280,7 @@ func _dodge() -> void:
 	dodge_cooldown = dodge_cooldown_time()
 	_dodge_hits.clear()
 	_grazed = false
+	_last_scorch = Vector2.INF
 	match run.dodge:
 		"nova_afterburner":
 			var d: Dictionary = DODGES[run.dodge]
@@ -307,6 +311,13 @@ func _update_dodge_effect() -> void:
 		"cryo_frost_step":
 			var d: Dictionary = DODGES[run.dodge]
 			game.frost_step(self, d.slow, d.duration * slot_effect_mult("dodge"), d.reach)
+		"acid_scorch":
+			# Drop a fire patch every few pixels along the dash path.
+			var d: Dictionary = DODGES[run.dodge]
+			if _last_scorch == Vector2.INF or position.distance_to(_last_scorch) >= d.spacing:
+				_last_scorch = position
+				game.scorch_patch(self, position, d.radius, d.duration * slot_effect_mult("dodge"),
+					d.power * run.slot_level("dodge"), d.damage)
 
 
 func _update_secondary(secondary_pressed: bool) -> void:
@@ -316,6 +327,10 @@ func _update_secondary(secondary_pressed: bool) -> void:
 	match run.secondary:
 		"volt_storm":
 			game.storm_burst(self, s.damage * slot_effect_mult("secondary"), s.targets, s.range)
+		"acid_napalm":
+			_shoot(Vector2(10, 0), 0.0, s.speed, 0.0, {"kind": "canister", "radius": 4.0, "fuse": s.fuse,
+				"extra": {"width": s.width, "duration": s.duration * slot_effect_mult("secondary"),
+					"tick": s.tick, "power": s.power}})
 		"aegis_repulsor":
 			var m := slot_effect_mult("secondary")
 			game.repulsor(self, s.radius, s.bullet_damage * m, s.blast_damage * m)

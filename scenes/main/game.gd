@@ -39,6 +39,7 @@ var starfield: Starfield
 var world_root: Node2D
 var enemies: Node2D
 var decoys: Node2D
+var hazards: Node2D
 var player_bullets: Node2D
 var enemy_bullets: Node2D
 var players_node: Node2D
@@ -61,6 +62,7 @@ func _build_nodes() -> void:
 	add_child(starfield)
 	world_root = Node2D.new()
 	add_child(world_root)
+	hazards = _add_layer("Hazards")
 	decoys = _add_layer("Decoys")
 	enemies = _add_layer("Enemies")
 	players_node = _add_layer("Players")
@@ -336,6 +338,7 @@ func spawn_player_bullet(pos: Vector2, vel: Vector2, damage: float, run: PlayerR
 	b.pierce_left = opts.get("pierce", 0)
 	b.fuse = opts.get("fuse", 0.0)
 	b.freeze_time = opts.get("freeze", 0.0)
+	b.extra = opts.get("extra", {})
 	if b.kind == "homing" or b.kind == "reflect":
 		b.game = self
 		b.rotation = vel.angle()
@@ -361,6 +364,8 @@ func _collide() -> void:
 		if b.fuse_done:
 			if b.kind == "ice_bomb":
 				_ice_blast(b)
+			elif b.kind == "canister":
+				_napalm(b)
 			else:
 				_explode(b.position, b.explode_radius, b.damage, b.owner_run)
 				b.queue_free()
@@ -403,6 +408,9 @@ func _bullet_hit_enemy(b: Bullet, e: Enemy) -> void:
 			_frost_hit(e, b.damage, run)
 		"ice_bomb":
 			_ice_blast(b)
+			return
+		"canister":
+			_napalm(b)
 			return
 		_:
 			if b.explode_radius > 0.0:
@@ -463,6 +471,46 @@ func _ice_blast(b: Bullet) -> void:
 			e.freeze(b.freeze_time)
 			e.take_damage(b.damage, b.owner_run)
 	b.queue_free()
+
+
+## Acid/Fire secondary, Napalm Line: the canister lands and leaves a strip of
+## fire running the full height of the screen; enemies inside gain acid stacks.
+func _napalm(b: Bullet) -> void:
+	var run := b.owner_run
+	var x: float = clampf(b.position.x, 10.0, 470.0)
+	var h := Hazard.new()
+	h.position = Vector2(x, 0)
+	h.rect = Rect2(-b.extra.width / 2.0, 0, b.extra.width, 270)
+	h.life = b.extra.duration
+	h.max_life = h.life
+	h.tick = b.extra.tick
+	h.look = "napalm"
+	h.enemies_node = enemies
+	var power: int = b.extra.power
+	h.on_tick = func(inside: Array):
+		for e in inside:
+			e.add_acid(power, run)
+	hazards.add_child(h)
+	_effect("explosion", b.position, 0.25, 14.0, Color(1, 0.55, 0.15))
+	b.queue_free()
+
+
+## Acid/Fire dodge, Scorch Trail: one burning patch on the dash path.
+func scorch_patch(p: Player, pos: Vector2, radius: float, duration: float, power: int, damage: float) -> void:
+	var run := p.run
+	var h := Hazard.new()
+	h.position = pos
+	h.radius = radius
+	h.life = duration
+	h.max_life = duration
+	h.tick = 0.3
+	h.look = "scorch"
+	h.enemies_node = enemies
+	h.on_tick = func(inside: Array):
+		for e in inside:
+			e.add_acid(power, run)
+			e.take_damage(damage, run, false)
+	hazards.add_child(h)
 
 
 ## Phase Shift graze feedback: a small bright flash where the bullet passed.

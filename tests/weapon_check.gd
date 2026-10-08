@@ -164,6 +164,7 @@ func _check_volt(game: Game, p: Player) -> void:
 	await _check_nova(game, p)
 	await _check_swarm(game, p)
 	await _check_aegis(game, p)
+	await _check_acid(game, p)
 
 
 func _equip(game: Game, run: PlayerRun, id: String) -> void:
@@ -348,3 +349,47 @@ func _check_aegis(game: Game, p: Player) -> void:
 	await _frames(2, game)
 	print("Phase Shift: i-frames %.2f s, cooldown %.2f -> %.2f s after graze, hull %d/%d" % [
 		iframes, cd_before, p.dodge_cooldown, p.run.hull, p.run.max_hull])
+
+
+func _check_acid(game: Game, p: Player) -> void:
+	_equip(game, p.run, "acid_napalm")
+	_equip(game, p.run, "acid_scorch")
+	_clear_enemies(game)
+	game._clear_enemy_bullets()
+	await _frames(450, game)
+	# Napalm Line: canister hits a dummy at x=200; the strip covers that column
+	# from top to bottom, so dummies at the top and bottom burn too.
+	p.position = Vector2(100, 135)
+	var hit := _spawn_dummy(game, Vector2(200, 135))
+	var top := _spawn_dummy(game, Vector2(204, 20))
+	var bottom := _spawn_dummy(game, Vector2(196, 250))
+	var aside := _spawn_dummy(game, Vector2(300, 40))
+	Input.action_press("secondary")
+	await _frames(2, game)
+	Input.action_release("secondary")
+	await _frames(60, game)
+	var in_strip := [hit, top, bottom].filter(func(e): return e.acid_stacks > 0).size()
+	await _frames(240, game)
+	var strips_left := game.hazards.get_children().filter(func(h): return not h.is_queued_for_deletion()).size()
+	print("Napalm Line: burning %d/3 in the strip, outside burning %s, strip gone after 5 s %s, cooldown %.1f s" % [
+		in_strip, aside.acid_stacks > 0, strips_left == 0, secondary_cd(p)])
+	# Scorch Trail: dash right past one dummy on the path; one dummy well away.
+	_clear_enemies(game)
+	await _frames(100, game)
+	p.position = Vector2(100, 135)
+	var on_path := _spawn_dummy(game, Vector2(130, 140))
+	var off_path := _spawn_dummy(game, Vector2(130, 220))
+	on_path.radius = 2.0  # small target: it only burns if it sits right on the trail
+	Input.action_press("move_right")
+	Input.action_press("dodge")
+	await _frames(2, game)
+	Input.action_release("dodge")
+	await _frames(12, game)
+	Input.action_release("move_right")
+	await _frames(30, game)
+	print("Scorch Trail: patches dropped %d, on-path acid %d (damage %.1f), off-path acid %d" % [
+		game.hazards.get_child_count(), on_path.acid_stacks, on_path.max_hp - on_path.hp, off_path.acid_stacks])
+
+
+func secondary_cd(p: Player) -> float:
+	return p.secondary_cooldown
