@@ -4,11 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "swarm_option"
-display_name = "Formation Drone"
-description = "Add a drone locked in formation above or below your ship. It fires a half-strength copy of your main weapon."
+id = "swarm_decoy"
+display_name = "Decoy"
+description = "Dodging leaves a decoy that draws enemy aim for 2 s, then explodes. Each level: +25% damage, -10% dodge cooldown."
 family = "Swarm"
-rarity = 1
-max_stacks = 4
-slot = "passive"
+rarity = 0
+max_stacks = 3
+slot = "dodge"
 incompatible_with = PackedStringArray()

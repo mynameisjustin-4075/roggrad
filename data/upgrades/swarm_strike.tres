@@ -4,11 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "swarm_option"
-display_name = "Formation Drone"
-description = "Add a drone locked in formation above or below your ship. It fires a half-strength copy of your main weapon."
+id = "swarm_strike"
+display_name = "Swarm Strike"
+description = "For 6 s your drones circle the ship and fire straight at enemies, and 2 temporary drones join them. 12 s cooldown. Each level: +25% duration, -10% cooldown."
 family = "Swarm"
 rarity = 1
-max_stacks = 4
-slot = "passive"
+max_stacks = 3
+slot = "secondary"
 incompatible_with = PackedStringArray()

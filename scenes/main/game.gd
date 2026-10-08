@@ -37,6 +37,7 @@ var _pick_queue: Array[PlayerRun] = []
 var starfield: Starfield
 var world_root: Node2D
 var enemies: Node2D
+var decoys: Node2D
 var player_bullets: Node2D
 var enemy_bullets: Node2D
 var players_node: Node2D
@@ -59,6 +60,7 @@ func _build_nodes() -> void:
 	add_child(starfield)
 	world_root = Node2D.new()
 	add_child(world_root)
+	decoys = _add_layer("Decoys")
 	enemies = _add_layer("Enemies")
 	players_node = _add_layer("Players")
 	player_bullets = _add_layer("PlayerBullets")
@@ -152,6 +154,31 @@ func _debug_cycle(run: PlayerRun, slot: String) -> void:
 	else:
 		run.equip(options[next])
 	_banner(run.slot_name(slot))
+
+
+## What enemies aim and dive at: an active Decoy if there is one, else the
+## nearest living player.
+func aim_target(from: Vector2) -> Node2D:
+	var best: Node2D = null
+	var best_d := INF
+	for d in decoys.get_children():
+		if d.is_queued_for_deletion():
+			continue
+		var dist := from.distance_squared_to(d.position)
+		if dist < best_d:
+			best_d = dist
+			best = d
+	return best if best else nearest_player(from)
+
+
+## Swarm dodge, Decoy: a ghost ship that draws fire, then explodes.
+func spawn_decoy(p: Player, pos: Vector2, duration: float, damage: float, radius: float) -> void:
+	var d := Decoy.new()
+	d.position = pos
+	d.life = duration
+	d.color = p.color
+	d.on_expire = func(): _explode(d.position, radius, damage, p.run, p.color)
+	decoys.add_child(d)
 
 
 func nearest_player(from: Vector2) -> Player:
@@ -397,13 +424,15 @@ func nearest_enemy(from: Vector2, max_dist: float) -> Enemy:
 	return _nearest_enemy(from, max_dist, [])
 
 
-## Lightning: arc from the ship to the target, then chain onward.
-func lightning_zap(p: Player, target: Enemy, damage: float) -> void:
+## Lightning: arc from `origin` (default: the ship's nose) to the target, then
+## chain onward. `chains` = -1 uses the weapon's normal 1 + level.
+func lightning_zap(p: Player, target: Enemy, damage: float, origin := Vector2.INF, chains := -1) -> void:
 	var run := p.run
-	_effect("arc", p.position + Vector2(6, 0), 0.2, 0.0, LIGHTNING_COLOR, target.position)
+	var from := p.position + Vector2(6, 0) if origin == Vector2.INF else origin
+	_effect("arc", from, 0.2, 0.0, LIGHTNING_COLOR, target.position)
 	target.take_damage(damage, run)
 	_apply_on_hit(target, damage, run)
-	_chain_lightning(target, damage * 0.7, 1 + run.primary_level(), run)
+	_chain_lightning(target, damage * 0.7, 1 + run.primary_level() if chains < 0 else chains, run)
 
 
 ## Volt secondary, Storm Burst: arcs from the ship to the nearest enemies in range.

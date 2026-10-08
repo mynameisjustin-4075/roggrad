@@ -162,6 +162,7 @@ func _check_volt(game: Game, p: Player) -> void:
 		near_a.max_hp - near_a.hp, far.hp == far.max_hp, p.dodge_cooldown_time()])
 	await _check_cryo(game, p)
 	await _check_nova(game, p)
+	await _check_swarm(game, p)
 
 
 func _equip(game: Game, run: PlayerRun, id: String) -> void:
@@ -253,3 +254,58 @@ func _check_nova(game: Game, p: Player) -> void:
 	Input.action_release("dodge")
 	Input.action_release("move_left")
 	print("Afterburner: start-point damage %.1f, far untouched %s" % [at_start.max_hp - at_start.hp, far.hp == far.max_hp])
+
+
+func _check_swarm(game: Game, p: Player) -> void:
+	p.run.upgrades["swarm_option"] = 2
+	_clear_enemies(game)
+	await _frames(30, game)
+	# Drones copy the main weapon: one main volley + 2 drone shots of the same kind.
+	var copies := []
+	for id in ["", "cryo_lance", "nova_missiles"]:
+		if id == "":
+			p.run.unequip("primary")
+		else:
+			_equip(game, p.run, id)
+		for b in game.player_bullets.get_children():
+			b.queue_free()
+		await _frames(1, game)
+		p.fire_timer = 0.0
+		p._fire()
+		var kind: String = p.weapon().kind
+		copies.append("%s x%d" % [kind, game.player_bullets.get_children().filter(func(b): return b.kind == kind and not b.is_queued_for_deletion()).size()])
+	print("Drone copies (main + 2 drones): %s" % ", ".join(copies))
+	p.run.unequip("primary")
+	# Swarm Strike: 4 drones orbit and shoot an enemy directly behind the ship.
+	_equip(game, p.run, "swarm_strike")
+	_equip(game, p.run, "swarm_decoy")
+	await _frames(400, game)
+	p.position = Vector2(250, 135)
+	var behind := _spawn_dummy(game, Vector2(120, 135))
+	Input.action_press("secondary")
+	await _frames(2, game)
+	Input.action_release("secondary")
+	var orbiting := p.drone_offsets().size()
+	Input.action_press("fire")
+	await _frames(60, game)
+	Input.action_release("fire")
+	var behind_dmg: float = behind.max_hp - behind.hp
+	await _frames(330, game)
+	print("Swarm Strike: %d drones orbiting, enemy behind took %.1f, after 6.5 s drones back to %d" % [orbiting, behind_dmg, p.drone_offsets().size()])
+	# Decoy: a gunner aims at the decoy, which then explodes on a nearby dummy.
+	_clear_enemies(game)
+	await _frames(100, game)
+	p.position = Vector2(100, 135)
+	var gunner := _spawn_dummy(game, Vector2(350, 60))
+	var beside := _spawn_dummy(game, Vector2(115, 150))
+	Input.action_press("move_up")
+	Input.action_press("dodge")
+	await _frames(2, game)
+	Input.action_release("dodge")
+	await _frames(10, game)
+	Input.action_release("move_up")
+	var aimed_at = game.aim_target(gunner.position)
+	var aims_decoy: bool = aimed_at is Decoy
+	await _frames(130, game)
+	print("Decoy: enemies aim at decoy %s, decoy exploded on the dummy beside it (damage %.1f), aim back on player %s" % [
+		aims_decoy, beside.max_hp - beside.hp, game.aim_target(gunner.position) == p])

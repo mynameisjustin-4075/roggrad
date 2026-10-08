@@ -95,7 +95,7 @@ func _move(delta: float) -> void:
 				position.x -= speed * 0.4 * delta
 			else:
 				if vel == Vector2.ZERO:
-					var p = game.nearest_player(position)
+					var p = game.aim_target(position)
 					vel = (p.position - position).normalized() * speed if p else Vector2(-speed, 0)
 				position += vel * delta
 		_:
@@ -108,7 +108,7 @@ func _update_fire(delta: float) -> void:
 	fire_timer -= delta
 	if fire_timer <= 0.0:
 		fire_timer = fire_interval
-		var p = game.nearest_player(position)
+		var p = game.aim_target(position)
 		if p:
 			game.spawn_enemy_bullet(position, (p.position - position).normalized() * 90.0)
 

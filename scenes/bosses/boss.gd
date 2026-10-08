@@ -35,7 +35,7 @@ func _update_fire(delta: float) -> void:
 	fire_timer -= delta
 	if fire_timer <= 0.0:
 		fire_timer = fire_interval * (0.8 if phase == 2 else 1.0)
-		var p = game.nearest_player(position)
+		var p = game.aim_target(position)
 		if p:
 			var dir: Vector2 = (p.position - position).normalized()
 			for a in [-0.25, 0.0, 0.25]:

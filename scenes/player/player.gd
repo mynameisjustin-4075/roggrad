@@ -12,10 +12,14 @@ const DODGE_SPEED := 380.0
 const DODGE_DASH_TIME := 0.15
 const DODGE_IFRAMES := 0.35
 const DODGE_COOLDOWN := 1.2
-const DRONE_INTERVAL := 0.18
-const DRONE_DAMAGE := 0.5
+## Drones copy the main weapon's shot at this fraction of its damage.
+const DRONE_DAMAGE_MULT := 0.5
 ## Drone slots: alternate above and below the ship, second pair further out.
 const DRONE_OFFSETS := [Vector2(-2, -16), Vector2(-2, 16), Vector2(-10, -30), Vector2(-10, 30)]
+## Swarm Strike: drones orbit the ship at this radius and spin speed (rad/s).
+const STRIKE_ORBIT := 24.0
+const STRIKE_SPIN := 3.0
+const DRONE_BEAM_RANGE := 200.0
 const BEAM_TICK := 0.1
 const BEAM_HALF_WIDTH := 2.0
 
@@ -34,6 +38,7 @@ const SECONDARIES := {
 	"volt_storm": {"cooldown": 5.0, "damage": 6.0, "targets": 6, "range": 150.0},
 	"cryo_ice": {"cooldown": 6.0, "damage": 4.0, "radius": 52.0, "freeze": 3.0, "speed": 220.0, "fuse": 0.8},
 	"nova_homing": {"cooldown": 6.0, "damage": 3.0, "count": 6, "radius": 12.0, "speed": 200.0, "fuse": 3.0},
+	"swarm_strike": {"cooldown": 12.0, "duration": 6.0, "extra_drones": 2},
 }
 ## Dodge upgrades by upgrade id; "" is the plain dodge.
 const DODGES := {
@@ -41,6 +46,7 @@ const DODGES := {
 	"volt_static": {"damage": 5.0, "reach": 30.0},
 	"cryo_frost_step": {"slow": 0.5, "duration": 2.0, "reach": 30.0},
 	"nova_afterburner": {"damage": 6.0, "radius": 28.0},
+	"swarm_decoy": {"duration": 2.0, "damage": 6.0, "radius": 32.0},
 }
 
 var run: PlayerRun
@@ -48,8 +54,10 @@ var game
 var ctl: ControlState
 var color := Color.WHITE
 var fire_timer := 0.0
-var drone_timer := 0.0
 var invuln := 0.0
+var strike_timer := 0.0  # Swarm Strike time left
+var _strike_angle := 0.0
+var _drone_beams: Array = []  # [drone offset, beam end] pairs, local, for drawing
 var shot_count := 0
 var focused := false
 var beam_on := false
@@ -124,7 +132,9 @@ func _physics_process(delta: float) -> void:
 	dodge_cooldown = maxf(dodge_cooldown - delta, 0.0)
 	secondary_cooldown = maxf(secondary_cooldown - delta, 0.0)
 	fire_timer -= delta
-	drone_timer -= delta
+	strike_timer = maxf(strike_timer - delta, 0.0)
+	_strike_angle += STRIKE_SPIN * delta
+	_drone_beams.clear()
 	if game.state == Game.State.PLAYING:
 		if dodge_pressed and dodge_cooldown <= 0.0:
 			_dodge()
@@ -135,8 +145,6 @@ func _physics_process(delta: float) -> void:
 			_update_beam(delta)
 		elif firing and fire_timer <= 0.0:
 			_fire()
-		if firing and drone_timer <= 0.0:
-			_fire_drones()
 		_update_secondary(secondary_pressed)
 		if bomb_pressed and run.bombs > 0:
 			run.bombs -= 1
@@ -166,17 +174,24 @@ func _fire() -> void:
 			_shoot(Vector2(8, 0), 10.0 * i * side, w.speed, dmg * 0.6, opts)
 	if run.stacks("nova_payload") > 0 and shot_count % 5 == 0:
 		_shoot(Vector2.ZERO, 0.0, 220.0, 3.0, {"kind": "missile", "explode": 20.0})
+	_fire_drones(w, dmg)
 
 
 ## Tesla-coil Lightning: arc from the ship to the nearest enemy in range, in any
 ## direction. With nothing in range it stays charged and zaps as soon as one is.
+## Each drone adds its own weaker, non-chaining zap from where it sits.
 func _zap(w: Dictionary) -> void:
 	var target = game.nearest_enemy(position, w.range)
 	if target == null:
 		return
 	fire_timer = w.interval / fire_rate_mult()
 	shot_count += 1
-	game.lightning_zap(self, target, w.damage * level_mult())
+	var dmg: float = w.damage * level_mult()
+	game.lightning_zap(self, target, dmg)
+	for off in drone_offsets():
+		var drone_target = game.nearest_enemy(position + off, w.range)
+		if drone_target:
+			game.lightning_zap(self, drone_target, dmg * DRONE_DAMAGE_MULT, position + off, 0)
 
 
 func _shoot(offset: Vector2, angle_deg: float, speed: float, dmg: float, opts: Dictionary) -> void:
@@ -184,13 +199,39 @@ func _shoot(offset: Vector2, angle_deg: float, speed: float, dmg: float, opts: D
 	game.spawn_player_bullet(position + offset, vel, dmg, run, opts)
 
 
-func _fire_drones() -> void:
+## Drone positions relative to the ship: locked formation normally; during
+## Swarm Strike every drone (plus the temporary ones) orbits the ship.
+func drone_offsets() -> Array:
 	var count := run.stacks("swarm_option")
-	if count == 0:
-		return
-	drone_timer = DRONE_INTERVAL / fire_rate_mult()
-	for i in count:
-		game.spawn_player_bullet(position + DRONE_OFFSETS[i] + Vector2(6, 0), Vector2(380, 0), DRONE_DAMAGE, run)
+	var out: Array = []
+	if strike_timer > 0.0:
+		count += SECONDARIES["swarm_strike"].extra_drones
+		for i in count:
+			out.append(Vector2.from_angle(_strike_angle + TAU * i / count) * STRIKE_ORBIT)
+	else:
+		for i in count:
+			out.append(DRONE_OFFSETS[i])
+	return out
+
+
+## Straight ahead normally; at the nearest enemy during Swarm Strike.
+func _drone_aim(from: Vector2) -> Vector2:
+	if strike_timer > 0.0:
+		var e = game.nearest_enemy(from, INF)
+		if e:
+			return (e.position - from).normalized()
+	return Vector2.RIGHT
+
+
+## Each drone fires a weaker copy of the main weapon's projectile.
+func _fire_drones(w: Dictionary, dmg: float) -> void:
+	for off in drone_offsets():
+		var pos: Vector2 = position + off
+		var dir := _drone_aim(pos)
+		var opts := {"kind": w.kind}
+		if w.kind == "missile":
+			opts["explode"] = 14.0
+		game.spawn_player_bullet(pos + dir * 6.0, dir * w.speed, dmg * DRONE_DAMAGE_MULT, run, opts)
 
 
 func _update_beam(delta: float) -> void:
@@ -199,12 +240,23 @@ func _update_beam(delta: float) -> void:
 		return
 	var target = game.beam_target(position, BEAM_HALF_WIDTH)
 	beam_end_x = target.position.x - target.radius if target else 480.0
+	# Drone beams: straight ahead, or locked onto the nearest enemy in a Strike.
+	var drone_targets: Array = []
+	for off in drone_offsets():
+		var pos: Vector2 = position + off
+		var t = game.nearest_enemy(pos, DRONE_BEAM_RANGE) if strike_timer > 0.0 else game.beam_target(pos, 1.5)
+		drone_targets.append(t)
+		var end: Vector2 = t.position - position if t else Vector2(480.0 - position.x, off.y)
+		_drone_beams.append([off, end])
 	_beam_timer -= delta
 	if _beam_timer <= 0.0:
 		_beam_timer = BEAM_TICK
+		var dps: float = weapon().damage * level_mult() * fire_rate_mult()
 		if target:
-			var dps: float = weapon().damage * level_mult() * fire_rate_mult()
 			game.beam_hit(self, target, dps * BEAM_TICK)
+		for t in drone_targets:
+			if t:
+				game.beam_hit(self, t, dps * BEAM_TICK * DRONE_DAMAGE_MULT)
 
 
 ## Dash in the held direction with brief invulnerability. With no direction
@@ -215,9 +267,13 @@ func _dodge() -> void:
 	dodge_iframes = DODGE_IFRAMES
 	dodge_cooldown = dodge_cooldown_time()
 	_dodge_hits.clear()
-	if run.dodge == "nova_afterburner":
-		var d: Dictionary = DODGES[run.dodge]
-		game.afterburner(self, position, d.damage * slot_effect_mult("dodge"), d.radius)
+	match run.dodge:
+		"nova_afterburner":
+			var d: Dictionary = DODGES[run.dodge]
+			game.afterburner(self, position, d.damage * slot_effect_mult("dodge"), d.radius)
+		"swarm_decoy":
+			var d: Dictionary = DODGES[run.dodge]
+			game.spawn_decoy(self, position, d.duration, d.damage * slot_effect_mult("dodge"), d.radius)
 
 
 ## Per-frame dodge-upgrade effects while the dodge's invulnerability lasts.
@@ -240,6 +296,8 @@ func _update_secondary(secondary_pressed: bool) -> void:
 	match run.secondary:
 		"volt_storm":
 			game.storm_burst(self, s.damage * slot_effect_mult("secondary"), s.targets, s.range)
+		"swarm_strike":
+			strike_timer = s.duration * slot_effect_mult("secondary")
 		"nova_homing":
 			# Fan the missiles out from the ship; they then curve onto targets.
 			var m := slot_effect_mult("secondary")
@@ -289,9 +347,13 @@ func _draw() -> void:
 		draw_rect(Rect2(10, -BEAM_HALF_WIDTH - 1, length, BEAM_HALF_WIDTH * 2 + 2), Color(0.6, 1.0, 0.2, flicker))
 		draw_rect(Rect2(10, -1, length, 2), Color(0.95, 1.0, 0.75))
 		draw_circle(Vector2(10 + length, 0), 3.0, Color(1.0, 0.8, 0.3, 0.8))
-	for i in run.stacks("swarm_option"):
-		var d: Vector2 = DRONE_OFFSETS[i]
-		draw_colored_polygon(PackedVector2Array([d + Vector2(5, 0), d + Vector2(-3, -3), d + Vector2(-3, 3)]), color.darkened(0.25))
+	for pair in _drone_beams:
+		draw_line(pair[0], pair[1], Color(0.7, 1.0, 0.3, 0.7), 1.0)
+	for off in drone_offsets():
+		var d: Vector2 = off
+		var aim := _drone_aim(position + d)
+		var side := aim.orthogonal()
+		draw_colored_polygon(PackedVector2Array([d + aim * 5.0, d - aim * 3.0 + side * 3.0, d - aim * 3.0 - side * 3.0]), color.darkened(0.25))
 		draw_rect(Rect2(d + Vector2(-1, -0.5), Vector2(2, 1)), Color.WHITE)
 	if invuln > 0.0 and int(invuln * 20.0) % 2 == 0:
 		return
