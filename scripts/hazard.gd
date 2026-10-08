@@ -1,8 +1,10 @@
 class_name Hazard
 extends Node2D
-## A lingering area that affects enemies inside it every `tick` seconds:
-## a rectangle (`rect`, local) or a circle (`radius`). `on_tick` receives the
-## enemies inside. Used by Napalm Line (fire strip) and Scorch Trail (patches).
+## A lingering area that affects enemies inside it: a rectangle (`rect`, local)
+## or a circle (`radius`). `on_tick` receives the affected enemies: anything
+## that enters is hit at once (so fast enemies can't slip between ticks), then
+## everything inside is hit every `tick` seconds. Used by Napalm Line (fire
+## strip) and Scorch Trail (patches).
 
 var life := 4.0
 var max_life := 4.0
@@ -13,6 +15,7 @@ var look := "napalm"  # "napalm" strip or "scorch" patch
 var on_tick: Callable
 var enemies_node: Node
 var _tick_timer := 0.0
+var _was_inside := {}  # enemy -> true, as of last frame
 
 
 func contains(e: Node2D) -> bool:
@@ -27,12 +30,19 @@ func _physics_process(delta: float) -> void:
 	if life <= 0.0:
 		queue_free()
 		return
+	var inside := enemies_node.get_children().filter(func(e): return not e.dead and contains(e))
 	_tick_timer -= delta
+	var affected: Array
 	if _tick_timer <= 0.0:
 		_tick_timer = tick
-		var inside := enemies_node.get_children().filter(func(e): return not e.dead and contains(e))
-		if not inside.is_empty() and on_tick.is_valid():
-			on_tick.call(inside)
+		affected = inside
+	else:
+		affected = inside.filter(func(e): return not _was_inside.has(e))
+	_was_inside.clear()
+	for e in inside:
+		_was_inside[e] = true
+	if not affected.is_empty() and on_tick.is_valid():
+		on_tick.call(affected)
 	queue_redraw()
 
 

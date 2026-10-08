@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 id = "acid_napalm"
 display_name = "Napalm Line"
-description = "Lob a canister that leaves a strip of fire across the whole screen for 4 s, stacking acid on anything inside. 7 s cooldown. Each level: +25% duration, -10% cooldown."
+description = "Lob a canister that leaves a strip of fire across the whole screen for 3 s, stacking acid on anything inside. 7 s cooldown. Each level: +25% duration, -10% cooldown."
 family = "Acid/Fire"
 rarity = 1
 max_stacks = 3

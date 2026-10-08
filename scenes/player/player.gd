@@ -42,7 +42,7 @@ const SECONDARIES := {
 	"nova_homing": {"cooldown": 6.0, "damage": 3.0, "count": 6, "radius": 12.0, "speed": 200.0, "fuse": 3.0},
 	"swarm_strike": {"cooldown": 12.0, "duration": 6.0, "extra_drones": 2},
 	"aegis_repulsor": {"cooldown": 6.0, "radius": 90.0, "bullet_damage": 2.0, "blast_damage": 2.0},
-	"acid_napalm": {"cooldown": 7.0, "speed": 260.0, "fuse": 0.5, "width": 20.0, "duration": 4.0, "tick": 0.4, "power": 2},
+	"acid_napalm": {"cooldown": 7.0, "speed": 260.0, "fuse": 0.5, "width": 20.0, "duration": 3.0, "tick": 0.4, "power": 2},
 }
 ## Dodge upgrades by upgrade id; "" is the plain dodge.
 const DODGES := {

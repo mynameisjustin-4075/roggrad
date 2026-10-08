@@ -369,9 +369,16 @@ func _check_acid(game: Game, p: Player) -> void:
 	Input.action_release("secondary")
 	await _frames(60, game)
 	var in_strip := [hit, top, bottom].filter(func(e): return e.acid_stacks > 0).size()
-	await _frames(240, game)
+	# A fast enemy (240 px/s, faster than a diver) flying straight through the strip.
+	var strip_x: float = game.hazards.get_children()[0].position.x
+	var racer := _spawn_dummy(game, Vector2(strip_x + 30, 70))
+	racer.pattern = "straight"
+	racer.speed = 240.0
+	await _frames(20, game)
+	print("Napalm Line: fast enemy crossed the strip (now %.0f px past it), acid %d" % [strip_x - racer.position.x, racer.acid_stacks])
+	await _frames(180, game)
 	var strips_left := game.hazards.get_children().filter(func(h): return not h.is_queued_for_deletion()).size()
-	print("Napalm Line: burning %d/3 in the strip, outside burning %s, strip gone after 5 s %s, cooldown %.1f s" % [
+	print("Napalm Line: burning %d/3 in the strip, outside burning %s, strip gone after 4 s %s, cooldown %.1f s" % [
 		in_strip, aside.acid_stacks > 0, strips_left == 0, secondary_cd(p)])
 	# Scorch Trail: dash right past one dummy on the path; one dummy well away.
 	_clear_enemies(game)
