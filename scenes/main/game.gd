@@ -16,6 +16,7 @@ const FROST_LANCE_SLOW := 0.8
 const FROST_WAKE_SLOW := 0.6
 const SLOW_DURATION := 2.0
 const LIGHTNING_COLOR := Color(0.75, 0.9, 1.0)
+const ICE_COLOR := Color(0.55, 0.85, 1.0)
 
 @export var world: WorldData
 
@@ -305,6 +306,8 @@ func spawn_player_bullet(pos: Vector2, vel: Vector2, damage: float, run: PlayerR
 	b.radius = opts.get("radius", 2.0)
 	b.explode_radius = opts.get("explode", 0.0)
 	b.pierce_left = opts.get("pierce", 0)
+	b.fuse = opts.get("fuse", 0.0)
+	b.freeze_time = opts.get("freeze", 0.0)
 	player_bullets.add_child(b)
 
 
@@ -321,6 +324,9 @@ func spawn_enemy_bullet(pos: Vector2, vel: Vector2) -> void:
 func _collide() -> void:
 	for b in player_bullets.get_children():
 		if b.is_queued_for_deletion():
+			continue
+		if b.fuse_done:
+			_ice_blast(b)
 			continue
 		for e in enemies.get_children():
 			if e.dead or e in b.hit_list:
@@ -355,6 +361,9 @@ func _bullet_hit_enemy(b: Bullet, e: Enemy) -> void:
 	match b.kind:
 		"lance":
 			_frost_hit(e, b.damage, run)
+		"ice_bomb":
+			_ice_blast(b)
+			return
 		_:
 			if b.explode_radius > 0.0:
 				_explode(b.position, b.explode_radius, b.damage, run)
@@ -400,6 +409,25 @@ func storm_burst(p: Player, damage: float, max_targets: int, burst_range: float)
 		_effect("arc", p.position, 0.25, 0.0, LIGHTNING_COLOR, e.position)
 		e.take_damage(damage, p.run)
 		_apply_on_hit(e, damage, p.run)
+
+
+## Cryo secondary, Ice Blast: the bomb bursts, damaging and freezing every
+## enemy in its radius.
+func _ice_blast(b: Bullet) -> void:
+	_effect("ring", b.position, 0.35, b.explode_radius, ICE_COLOR)
+	_effect("explosion", b.position, 0.25, b.explode_radius * 0.5, ICE_COLOR)
+	for e in enemies.get_children():
+		if not e.dead and e.position.distance_to(b.position) <= b.explode_radius + e.radius:
+			e.freeze(b.freeze_time)
+			e.take_damage(b.damage, b.owner_run)
+	b.queue_free()
+
+
+## Cryo dodge, Frost Step: enemies near the dodging ship are slowed.
+func frost_step(p: Player, slow: float, duration: float, reach: float) -> void:
+	for e in enemies.get_children():
+		if not e.dead and e.position.distance_to(p.position) <= reach + e.radius:
+			e.apply_slow(slow, duration)
 
 
 ## Volt dodge, Static Dash: zap enemies the dodging ship passes close to, once

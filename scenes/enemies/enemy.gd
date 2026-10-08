@@ -33,6 +33,12 @@ var acid_stacks := 0
 var acid_power := 0
 var acid_timer := 0.0
 var acid_owner: PlayerRun = null
+var frozen_timer := 0.0
+## Freeze durations are multiplied by this. Bosses start lower and halve it on
+## every freeze (diminishing returns), recovering slowly back to the max.
+var freeze_resist := 1.0
+var freeze_resist_max := 1.0
+var freeze_diminishes := false
 
 
 func setup(p_kind: String, hp_mult: float) -> void:
@@ -53,13 +59,17 @@ func setup(p_kind: String, hp_mult: float) -> void:
 func _physics_process(delta: float) -> void:
 	if dead:
 		return
-	t += delta
-	var slow := 1.0
-	if slow_timer > 0.0:
-		slow_timer -= delta
-		slow = slow_mult
-	_move(delta * slow)
-	_update_fire(delta * slow)
+	freeze_resist = minf(freeze_resist + 0.05 * delta, freeze_resist_max)
+	if frozen_timer > 0.0:
+		frozen_timer -= delta
+	else:
+		t += delta
+		var slow := 1.0
+		if slow_timer > 0.0:
+			slow_timer -= delta
+			slow = slow_mult
+		_move(delta * slow)
+		_update_fire(delta * slow)
 	if acid_stacks > 0:
 		_tick_acid(delta)
 	flash = maxf(flash - delta, 0.0)
@@ -117,6 +127,13 @@ func apply_slow(mult: float, duration: float) -> void:
 	slow_timer = duration
 
 
+## Stop moving and firing for `duration` seconds (scaled by freeze_resist).
+func freeze(duration: float) -> void:
+	frozen_timer = maxf(frozen_timer, duration * freeze_resist)
+	if freeze_diminishes:
+		freeze_resist *= 0.5
+
+
 func _tick_acid(delta: float) -> void:
 	acid_timer -= delta
 	if acid_timer <= 0.0:
@@ -155,3 +172,6 @@ func _draw_status() -> void:
 		draw_arc(Vector2.ZERO, radius + 2.0, 0.0, TAU, 12, Color(0.6, 1.0, 0.2, 0.8), 1.0)
 	if slow_timer > 0.0:
 		draw_arc(Vector2.ZERO, radius + 3.5, 0.0, TAU, 12, Color(0.6, 0.85, 1.0, 0.7), 1.0)
+	if frozen_timer > 0.0:
+		draw_circle(Vector2.ZERO, radius + 1.0, Color(0.7, 0.9, 1.0, 0.55))
+		draw_arc(Vector2.ZERO, radius + 1.5, 0.0, TAU, 6, Color.WHITE, 1.0)

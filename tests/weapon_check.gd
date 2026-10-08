@@ -160,6 +160,7 @@ func _check_volt(game: Game, p: Player) -> void:
 	print("Static Dash: near hits %d/2 (damage %.1f each), far untouched %s, dodge cooldown set %.2f s" % [
 		[near_a, near_b].filter(func(e): return e.hp < e.max_hp).size(),
 		near_a.max_hp - near_a.hp, far.hp == far.max_hp, p.dodge_cooldown_time()])
+	await _check_cryo(game, p)
 
 
 func _equip(game: Game, run: PlayerRun, id: String) -> void:
@@ -168,3 +169,53 @@ func _equip(game: Game, run: PlayerRun, id: String) -> void:
 	for u in game._upgrade_library:
 		if u.id == id:
 			run.equip(u)
+
+
+func _check_cryo(game: Game, p: Player) -> void:
+	_equip(game, p.run, "cryo_ice")
+	_equip(game, p.run, "cryo_frost_step")
+	_clear_enemies(game)
+	await _frames(400, game)
+	# Ice Blast on impact: 3 dummies clustered ahead, 1 well outside the blast.
+	p.position = Vector2(100, 135)
+	var cluster := [_spawn_dummy(game, Vector2(200, 135)), _spawn_dummy(game, Vector2(215, 160)), _spawn_dummy(game, Vector2(220, 110))]
+	var outside := _spawn_dummy(game, Vector2(200, 230))
+	Input.action_press("secondary")
+	await _frames(2, game)
+	Input.action_release("secondary")
+	await _frames(40, game)
+	var frozen := cluster.filter(func(e): return e.frozen_timer > 0.0).size()
+	print("Ice Blast impact: frozen %d/3 (%.1f s left), outside frozen: %s, cooldown %.1f s" % [
+		frozen, cluster[0].frozen_timer, outside.frozen_timer > 0.0, p.secondary_cooldown])
+	# Ice Blast fuse: nothing in the way; it should burst ~176 px out and freeze a dummy there.
+	_clear_enemies(game)
+	await _frames(400, game)
+	p.position = Vector2(100, 60)
+	var at_fuse := _spawn_dummy(game, Vector2(100 + 10 + 176, 60 + 28))
+	Input.action_press("secondary")
+	await _frames(2, game)
+	Input.action_release("secondary")
+	await _frames(60, game)
+	print("Ice Blast fuse: burst on its own and froze the dummy: %s" % (at_fuse.frozen_timer > 0.0))
+	# Boss diminishing returns: two 3 s freezes in a row.
+	_clear_enemies(game)
+	var boss := Boss.new()
+	boss.game = game
+	boss.setup_boss(1.0)
+	boss.position = Vector2(380, 135)
+	game.enemies.add_child(boss)
+	boss.freeze(3.0)
+	var first := boss.frozen_timer
+	boss.frozen_timer = 0.0
+	boss.freeze(3.0)
+	print("Boss freeze: first %.2f s, second %.2f s" % [first, boss.frozen_timer])
+	# Frost Step: dodge next to a dummy -> slowed to 0.5 for 2 s.
+	_clear_enemies(game)
+	await _frames(100, game)
+	p.position = Vector2(100, 100)
+	var near := _spawn_dummy(game, Vector2(120, 110))
+	var far := _spawn_dummy(game, Vector2(300, 220))
+	Input.action_press("dodge")
+	await _frames(2, game)
+	Input.action_release("dodge")
+	print("Frost Step: near slowed to %.1f for %.1f s, far slowed: %s" % [near.slow_mult, near.slow_timer, far.slow_timer > 0.0])

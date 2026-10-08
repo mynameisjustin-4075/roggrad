@@ -32,11 +32,13 @@ const WEAPONS := {
 const SECONDARIES := {
 	"": {"cooldown": 4.0},
 	"volt_storm": {"cooldown": 5.0, "damage": 6.0, "targets": 6, "range": 150.0},
+	"cryo_ice": {"cooldown": 6.0, "damage": 4.0, "radius": 40.0, "freeze": 3.0, "speed": 220.0, "fuse": 0.8},
 }
 ## Dodge upgrades by upgrade id; "" is the plain dodge.
 const DODGES := {
 	"": {},
 	"volt_static": {"damage": 5.0, "reach": 30.0},
+	"cryo_frost_step": {"slow": 0.5, "duration": 2.0, "reach": 30.0},
 }
 
 var run: PlayerRun
@@ -221,6 +223,9 @@ func _update_dodge_effect() -> void:
 		"volt_static":
 			var d: Dictionary = DODGES[run.dodge]
 			game.static_dash(self, d.damage * slot_effect_mult("dodge"), d.reach, _dodge_hits)
+		"cryo_frost_step":
+			var d: Dictionary = DODGES[run.dodge]
+			game.frost_step(self, d.slow, d.duration * slot_effect_mult("dodge"), d.reach)
 
 
 func _update_secondary(secondary_pressed: bool) -> void:
@@ -230,6 +235,12 @@ func _update_secondary(secondary_pressed: bool) -> void:
 	match run.secondary:
 		"volt_storm":
 			game.storm_burst(self, s.damage * slot_effect_mult("secondary"), s.targets, s.range)
+		"cryo_ice":
+			# Bomb: bursts on the first enemy it touches, or after its fuse.
+			var m := slot_effect_mult("secondary")
+			_shoot(Vector2(10, 0), 0.0, s.speed, s.damage * m, {
+				"kind": "ice_bomb", "radius": 5.0, "explode": s.radius * m,
+				"freeze": s.freeze, "fuse": s.fuse})
 		_:
 			# Charge Beam: a tap fires the full-power piercing shot.
 			_shoot(Vector2(12, 0), 0.0, 300.0, 10.0, {"kind": "charge", "radius": 7.0, "pierce": 99})

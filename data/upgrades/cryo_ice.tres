@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "cryo_ice"
+display_name = "Ice Blast"
+description = "Fire a bomb that bursts on impact or after a short flight, freezing every enemy in the blast for 3 s. Bosses resist repeated freezes. 6 s cooldown. Each level: +25% blast size and damage, -10% cooldown."
+family = "Cryo"
+rarity = 1
+max_stacks = 3
+slot = "secondary"
+incompatible_with = PackedStringArray()
