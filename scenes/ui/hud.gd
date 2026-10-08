@@ -22,8 +22,8 @@ func _draw() -> void:
 		for b in run.bombs:
 			draw_circle(Vector2(x + 21 + b * 6, 17), 2.0, Color(1, 0.5, 0.3))
 		if run.alive:
-			_cooldown_bar(Vector2(x + 18, 25), 1.0 - p.dodge_cooldown / Player.DODGE_COOLDOWN, p.color)
-			_cooldown_bar(Vector2(x + 38, 25), 1.0 - p.secondary_cooldown / p.secondary().cooldown, Color(1, 0.85, 0.5))
+			_cooldown_bar(Vector2(x + 18, 25), 1.0 - p.dodge_cooldown / p.dodge_cooldown_time(), p.color)
+			_cooldown_bar(Vector2(x + 38, 25), 1.0 - p.secondary_cooldown / p.secondary_cooldown_time(), Color(1, 0.85, 0.5))
 		draw_string(font, Vector2(x + 18 + run.max_hull * 7 + 4, 12), "%dc" % run.credits, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.8, 0.8, 0.5))
 		if run.alive:
 			var weapon_name := run.primary_name + (" %d" % run.primary_level() if run.primary != "" else "")

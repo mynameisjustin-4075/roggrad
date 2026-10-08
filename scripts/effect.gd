@@ -1,6 +1,7 @@
 class_name Effect
 extends Node2D
-## Short-lived visual: an expanding ring (explosion) or a lightning line (arc).
+## Short-lived visual: an explosion, a lightning line (arc), or an expanding
+## outline (ring).
 
 var kind := "explosion"
 var life := 0.3
@@ -25,6 +26,10 @@ func _draw() -> void:
 			draw_arc(Vector2.ZERO, radius * (1.0 - k * 0.7), 0.0, TAU, 16, c, 1.0)
 			if k > 0.6:
 				draw_circle(Vector2.ZERO, radius * 0.4 * k, Color(1, 1, 0.8, k))
+		"ring":
+			# Expanding outline that reaches `radius` as it fades out.
+			draw_arc(Vector2.ZERO, radius * (1.0 - k * 0.85), 0.0, TAU, 32, c, 1.0)
+			draw_arc(Vector2.ZERO, radius * (1.0 - k * 0.85) - 2.0, 0.0, TAU, 32, Color(c, k * 0.35), 2.0)
 		"arc":
 			# Jagged bolt, re-rolled every frame so it crackles.
 			var to := target - position

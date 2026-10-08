@@ -4,6 +4,9 @@ extends RefCounted
 ## permanent (hangar) bonuses come from MetaProgress, the primary profile.
 
 const DEFAULT_PRIMARY_NAME := "Twin Shot"
+const DEFAULT_SECONDARY_NAME := "Charge Beam"
+const DEFAULT_DODGE_NAME := "Dodge"
+const SLOTS := ["primary", "secondary", "dodge"]
 
 var index := 0
 var devices: Array = []
@@ -11,10 +14,14 @@ var ship_id := "lancer"
 var max_hull := 3
 var hull := 3
 var bombs := 2
-var upgrades := {}  # upgrade id -> stacks (the primary weapon's stacks = its level)
-var primary := ""  # upgrade id of the primary weapon; "" = the ship's own shot
+var upgrades := {}  # upgrade id -> stacks (a slot upgrade's stacks = its level)
+# Equipped slot upgrades by id; "" = the ship's own version.
+var primary := ""
 var primary_name := DEFAULT_PRIMARY_NAME
-var secondary := ""  # upgrade id of the secondary ability; "" = the ship's own
+var secondary := ""
+var secondary_name := DEFAULT_SECONDARY_NAME
+var dodge := ""
+var dodge_name := DEFAULT_DODGE_NAME
 var credits := 0
 var kills := 0
 var alive := true
@@ -24,17 +31,39 @@ func stacks(id: String) -> int:
 	return upgrades.get(id, 0)
 
 
+func slot_id(slot: String) -> String:
+	return get(slot)
+
+
+func slot_name(slot: String) -> String:
+	return get(slot + "_name")
+
+
+func slot_level(slot: String) -> int:
+	var id := slot_id(slot)
+	return maxi(stacks(id), 1) if id != "" else 1
+
+
 func primary_level() -> int:
-	return maxi(stacks(primary), 1) if primary != "" else 1
+	return slot_level("primary")
 
 
-## Equip a primary weapon upgrade: the same one levels up, a new one replaces the old.
-func take_primary(u: UpgradeData) -> void:
-	if primary == u.id:
+## Equip a primary, secondary or dodge upgrade: the same one levels up, a
+## different one replaces whatever is in that slot (its levels are lost).
+func equip(u: UpgradeData) -> void:
+	var current := slot_id(u.slot)
+	if current == u.id:
 		upgrades[u.id] = stacks(u.id) + 1
 		return
-	if primary != "":
-		upgrades.erase(primary)
-	primary = u.id
-	primary_name = u.display_name
+	if current != "":
+		upgrades.erase(current)
+	set(u.slot, u.id)
+	set(u.slot + "_name", u.display_name)
 	upgrades[u.id] = 1
+
+
+## Back to the ship's own version for that slot.
+func unequip(slot: String) -> void:
+	upgrades.erase(slot_id(slot))
+	set(slot, "")
+	set(slot + "_name", {"primary": DEFAULT_PRIMARY_NAME, "secondary": DEFAULT_SECONDARY_NAME, "dodge": DEFAULT_DODGE_NAME}[slot])

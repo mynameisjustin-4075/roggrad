@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "volt_storm"
+display_name = "Storm Burst"
+description = "Lightning bursts from your ship, arcing to up to 6 enemies within range. 5 s cooldown. Each level: +25% damage, -10% cooldown."
+family = "Volt"
+rarity = 1
+max_stacks = 3
+slot = "secondary"
+incompatible_with = PackedStringArray()

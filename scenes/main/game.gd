@@ -118,22 +118,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## Debug builds only. F1: toggle invincibility. F2: clear the current room.
-## F3: cycle P1's primary weapon. F4: give P1 a formation drone.
+## F3 / F5 / F6: cycle P1's primary / secondary / dodge. F4: give P1 a drone.
 func _debug_key(keycode: Key) -> void:
 	var p1 := RunState.players[0]
 	match keycode:
 		KEY_F3:
-			var primaries := _upgrade_library.filter(func(u): return u.slot == "primary")
-			primaries.sort_custom(func(a, b): return a.id < b.id)
-			var ids := primaries.map(func(u): return u.id)
-			var next := ids.find(p1.primary) + 1
-			if next >= primaries.size():
-				p1.upgrades.erase(p1.primary)
-				p1.primary = ""
-				p1.primary_name = PlayerRun.DEFAULT_PRIMARY_NAME
-			else:
-				p1.take_primary(primaries[next])
-			_banner(p1.primary_name)
+			_debug_cycle(p1, "primary")
+		KEY_F5:
+			_debug_cycle(p1, "secondary")
+		KEY_F6:
+			_debug_cycle(p1, "dodge")
 		KEY_F4:
 			p1.upgrades["swarm_option"] = mini(p1.stacks("swarm_option") + 1, 4)
 		KEY_F1:
@@ -146,6 +140,17 @@ func _debug_key(keycode: Key) -> void:
 					e.dead = true
 					e.queue_free()
 				boss = null
+
+
+func _debug_cycle(run: PlayerRun, slot: String) -> void:
+	var options := _upgrade_library.filter(func(u): return u.slot == slot)
+	options.sort_custom(func(a, b): return a.id < b.id)
+	var next := options.map(func(u): return u.id).find(run.slot_id(slot)) + 1
+	if next >= options.size():
+		run.unequip(slot)
+	else:
+		run.equip(options[next])
+	_banner(run.slot_name(slot))
 
 
 func nearest_player(from: Vector2) -> Player:
@@ -265,8 +270,8 @@ func _can_offer(run: PlayerRun, u: UpgradeData) -> bool:
 
 
 func _on_upgrade_chosen(run: PlayerRun, u: UpgradeData) -> void:
-	if u.slot == "primary":
-		run.take_primary(u)
+	if u.slot != "passive":
+		run.equip(u)
 	else:
 		run.upgrades[u.id] = run.stacks(u.id) + 1
 	if u.id == "aegis_plating":
@@ -383,6 +388,31 @@ func lightning_zap(p: Player, target: Enemy, damage: float) -> void:
 	target.take_damage(damage, run)
 	_apply_on_hit(target, damage, run)
 	_chain_lightning(target, damage * 0.7, 1 + run.primary_level(), run)
+
+
+## Volt secondary, Storm Burst: arcs from the ship to the nearest enemies in range.
+func storm_burst(p: Player, damage: float, max_targets: int, burst_range: float) -> void:
+	_effect("ring", p.position, 0.3, burst_range, LIGHTNING_COLOR)
+	var targets := enemies.get_children().filter(
+		func(e): return not e.dead and e.position.distance_to(p.position) <= burst_range)
+	targets.sort_custom(func(a, b): return a.position.distance_squared_to(p.position) < b.position.distance_squared_to(p.position))
+	for e in targets.slice(0, max_targets):
+		_effect("arc", p.position, 0.25, 0.0, LIGHTNING_COLOR, e.position)
+		e.take_damage(damage, p.run)
+		_apply_on_hit(e, damage, p.run)
+
+
+## Volt dodge, Static Dash: zap enemies the dodging ship passes close to, once
+## each per dodge. `already_hit` is the player's list for the current dodge.
+func static_dash(p: Player, damage: float, reach: float, already_hit: Array) -> void:
+	for e in enemies.get_children():
+		if e.dead or e in already_hit:
+			continue
+		if e.position.distance_to(p.position) <= reach + e.radius:
+			already_hit.append(e)
+			_effect("arc", p.position, 0.2, 0.0, LIGHTNING_COLOR, e.position)
+			e.take_damage(damage, p.run)
+			_apply_on_hit(e, damage, p.run)
 
 
 ## Jump from enemy to enemy, never hitting the same one twice.

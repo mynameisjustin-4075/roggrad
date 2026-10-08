@@ -29,9 +29,14 @@ const WEAPONS := {
 }
 
 ## Secondary abilities by upgrade id; "" is the Lancer's own Charge Beam.
-## Corporation secondaries (offensive or defensive) get added here later.
 const SECONDARIES := {
-	"": {"name": "Charge Beam", "cooldown": 4.0},
+	"": {"cooldown": 4.0},
+	"volt_storm": {"cooldown": 5.0, "damage": 6.0, "targets": 6, "range": 150.0},
+}
+## Dodge upgrades by upgrade id; "" is the plain dodge.
+const DODGES := {
+	"": {},
+	"volt_static": {"damage": 5.0, "reach": 30.0},
 }
 
 var run: PlayerRun
@@ -52,6 +57,7 @@ var dodge_cooldown := 0.0
 var dodge_iframes := 0.0
 var _dodge_dash := 0.0
 var _dodge_dir := Vector2.ZERO
+var _dodge_hits: Array = []  # enemies already zapped by this Static Dash
 
 
 func setup(p_run: PlayerRun, p_game, p_color: Color) -> void:
@@ -67,6 +73,19 @@ func can_be_hit() -> bool:
 
 func secondary() -> Dictionary:
 	return SECONDARIES.get(run.secondary, SECONDARIES[""])
+
+
+## Secondary and dodge upgrades: +25% effect and -10% cooldown per level above 1.
+func slot_effect_mult(slot: String) -> float:
+	return 1.0 + 0.25 * (run.slot_level(slot) - 1)
+
+
+func secondary_cooldown_time() -> float:
+	return secondary().cooldown * (1.0 - 0.1 * (run.slot_level("secondary") - 1))
+
+
+func dodge_cooldown_time() -> float:
+	return DODGE_COOLDOWN * (1.0 - 0.1 * (run.slot_level("dodge") - 1))
 
 
 func weapon() -> Dictionary:
@@ -105,6 +124,7 @@ func _physics_process(delta: float) -> void:
 	if game.state == Game.State.PLAYING:
 		if dodge_pressed and dodge_cooldown <= 0.0:
 			_dodge()
+		_update_dodge_effect()
 		var firing := ctl.down("fire")
 		if weapon().kind == "beam":
 			beam_on = firing
@@ -189,15 +209,31 @@ func _dodge() -> void:
 	_dodge_dir = ctl.move().normalized()
 	_dodge_dash = DODGE_DASH_TIME if _dodge_dir != Vector2.ZERO else 0.0
 	dodge_iframes = DODGE_IFRAMES
-	dodge_cooldown = DODGE_COOLDOWN
+	dodge_cooldown = dodge_cooldown_time()
+	_dodge_hits.clear()
+
+
+## Per-frame dodge-upgrade effects while the dodge's invulnerability lasts.
+func _update_dodge_effect() -> void:
+	if dodge_iframes <= 0.0:
+		return
+	match run.dodge:
+		"volt_static":
+			var d: Dictionary = DODGES[run.dodge]
+			game.static_dash(self, d.damage * slot_effect_mult("dodge"), d.reach, _dodge_hits)
 
 
 func _update_secondary(secondary_pressed: bool) -> void:
 	if not secondary_pressed or secondary_cooldown > 0.0:
 		return
-	# Charge Beam: a tap fires the full-power piercing shot.
-	_shoot(Vector2(12, 0), 0.0, 300.0, 10.0, {"kind": "charge", "radius": 7.0, "pierce": 99})
-	secondary_cooldown = secondary().cooldown
+	var s := secondary()
+	match run.secondary:
+		"volt_storm":
+			game.storm_burst(self, s.damage * slot_effect_mult("secondary"), s.targets, s.range)
+		_:
+			# Charge Beam: a tap fires the full-power piercing shot.
+			_shoot(Vector2(12, 0), 0.0, 300.0, 10.0, {"kind": "charge", "radius": 7.0, "pierce": 99})
+	secondary_cooldown = secondary_cooldown_time()
 
 
 func take_hit() -> void:

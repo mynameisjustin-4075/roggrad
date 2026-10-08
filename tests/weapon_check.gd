@@ -103,6 +103,63 @@ func _check_abilities(game: Game, p: Player) -> void:
 		if b.kind == "charge":
 			shots_after += 1
 	print("Secondary: charge shots fired %d, cooldown %.1f s, extra shots during cooldown %d" % [shots, cd, shots_after - shots])
+	await _check_volt(game, p)
+
+
+func _spawn_dummy(game: Game, pos: Vector2) -> Enemy:
+	var e := Enemy.new()
+	e.game = game
+	e.setup("gunner", 20.0)
+	e.speed = 0.0
+	e.fire_mode = ""
+	e.position = pos
+	e.base_y = pos.y
+	game.enemies.add_child(e)
+	return e
+
+
+func _clear_enemies(game: Game) -> void:
+	for e in game.enemies.get_children():
+		e.dead = true
+		e.queue_free()
+
+
+func _check_volt(game: Game, p: Player) -> void:
+	p.run.unequip("primary")
+	p.run.upgrades.erase("swarm_option")
+	_equip(game, p.run, "volt_storm")
+	_equip(game, p.run, "volt_static")
+	game.god_mode = true
+	_clear_enemies(game)
+	await _frames(400, game)  # let cooldowns expire
+	# Storm Burst: 8 dummies, 6 inside 150 px plus 2 far away -> exactly 6 hit.
+	p.position = Vector2(150, 135)
+	var dummies: Array = []
+	for i in 6:
+		dummies.append(_spawn_dummy(game, p.position + Vector2.from_angle(TAU * i / 6.0) * (60 + i * 12)))
+	dummies.append(_spawn_dummy(game, Vector2(420, 40)))
+	dummies.append(_spawn_dummy(game, Vector2(420, 230)))
+	Input.action_press("secondary")
+	await _frames(2, game)
+	Input.action_release("secondary")
+	var hit := dummies.filter(func(e): return e.hp < e.max_hp).size()
+	print("Storm Burst: hit %d of 8 (6 in range), cooldown %.1f s, HUD name '%s'" % [hit, p.secondary_cooldown, p.run.secondary_name])
+	# Static Dash: dash right past 2 dummies 20 px off the path; 1 dummy far below.
+	_clear_enemies(game)
+	await _frames(2, game)
+	p.position = Vector2(100, 100)
+	var near_a := _spawn_dummy(game, Vector2(125, 120))
+	var near_b := _spawn_dummy(game, Vector2(150, 80))
+	var far := _spawn_dummy(game, Vector2(130, 200))
+	Input.action_press("move_right")
+	Input.action_press("dodge")
+	await _frames(3, game)
+	Input.action_release("dodge")
+	await _frames(20, game)
+	Input.action_release("move_right")
+	print("Static Dash: near hits %d/2 (damage %.1f each), far untouched %s, dodge cooldown set %.2f s" % [
+		[near_a, near_b].filter(func(e): return e.hp < e.max_hp).size(),
+		near_a.max_hp - near_a.hp, far.hp == far.max_hp, p.dodge_cooldown_time()])
 
 
 func _equip(game: Game, run: PlayerRun, id: String) -> void:
@@ -110,4 +167,4 @@ func _equip(game: Game, run: PlayerRun, id: String) -> void:
 		return
 	for u in game._upgrade_library:
 		if u.id == id:
-			run.take_primary(u)
+			run.equip(u)

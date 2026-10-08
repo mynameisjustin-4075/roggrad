@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "volt_static"
+display_name = "Static Dash"
+description = "Enemies you dodge past take a lightning hit. Each level: +25% damage, -10% dodge cooldown."
+family = "Volt"
+rarity = 0
+max_stacks = 3
+slot = "dodge"
+incompatible_with = PackedStringArray()
