@@ -385,6 +385,10 @@ func _collide() -> void:
 			continue
 		for p in players:
 			var dist: float = b.position.distance_to(p.position)
+			if p.run.alive and p.has_barrier() and dist < b.radius + Player.BARRIER_RADIUS:
+				_effect("explosion", b.position, 0.15, 5.0, AEGIS_COLOR)
+				b.queue_free()
+				break
 			if p.can_be_hit() and dist < b.radius + Player.HITBOX:
 				p.take_hit()
 				b.queue_free()

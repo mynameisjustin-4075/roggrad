@@ -14,6 +14,8 @@ const DODGE_IFRAMES := 0.35
 const DODGE_COOLDOWN := 1.2
 ## An enemy bullet passing this close counts as a graze (Phase Shift).
 const GRAZE_RADIUS := 12.0
+## Barrier bubble: enemy bullets touching it are destroyed.
+const BARRIER_RADIUS := 13.0
 ## Drones copy the main weapon's shot at this fraction of its damage.
 const DRONE_DAMAGE_MULT := 0.5
 ## Drone slots: alternate above and below the ship, second pair further out.
@@ -42,6 +44,9 @@ const SECONDARIES := {
 	"nova_homing": {"cooldown": 6.0, "damage": 3.0, "count": 6, "radius": 12.0, "speed": 200.0, "fuse": 3.0},
 	"swarm_strike": {"cooldown": 12.0, "duration": 6.0, "extra_drones": 2},
 	"aegis_repulsor": {"cooldown": 6.0, "radius": 90.0, "bullet_damage": 2.0, "blast_damage": 2.0},
+	# Defensive secondaries
+	"volt_overcharge": {"cooldown": 12.0, "duration": 6.0, "boost": 0.25},
+	"aegis_barrier": {"cooldown": 10.0, "duration": 3.0},
 	"acid_napalm": {"cooldown": 7.0, "speed": 260.0, "fuse": 0.5, "width": 20.0, "duration": 3.0, "tick": 0.4, "power": 2},
 }
 ## Dodge upgrades by upgrade id; "" is the plain dodge.
@@ -62,6 +67,8 @@ var color := Color.WHITE
 var fire_timer := 0.0
 var invuln := 0.0
 var strike_timer := 0.0  # Swarm Strike time left
+var overcharge_timer := 0.0  # Volt Overcharge time left
+var barrier_timer := 0.0  # Aegis Barrier time left
 var _strike_angle := 0.0
 var _drone_beams: Array = []  # [drone offset, beam end] pairs, local, for drawing
 var shot_count := 0
@@ -119,7 +126,16 @@ func level_mult() -> float:
 
 
 func fire_rate_mult() -> float:
-	return 1.0 + 0.3 * run.stacks("volt_overclock")
+	return (1.0 + 0.3 * run.stacks("volt_overclock")) * overcharge_mult()
+
+
+## Volt Overcharge: speed and fire rate boost while active.
+func overcharge_mult() -> float:
+	return 1.0 + SECONDARIES["volt_overcharge"].boost if overcharge_timer > 0.0 else 1.0
+
+
+func has_barrier() -> bool:
+	return barrier_timer > 0.0
 
 
 func _physics_process(delta: float) -> void:
@@ -134,7 +150,7 @@ func _physics_process(delta: float) -> void:
 		_dodge_dash -= delta
 		position += _dodge_dir * DODGE_SPEED * delta
 	else:
-		position += ctl.move() * BASE_SPEED * (0.5 if focused else 1.0) * delta
+		position += ctl.move() * BASE_SPEED * overcharge_mult() * (0.5 if focused else 1.0) * delta
 	position = position.clamp(Vector2(8, 8), Vector2(472, 262))
 	invuln = maxf(invuln - delta, 0.0)
 	dodge_iframes = maxf(dodge_iframes - delta, 0.0)
@@ -142,6 +158,8 @@ func _physics_process(delta: float) -> void:
 	secondary_cooldown = maxf(secondary_cooldown - delta, 0.0)
 	fire_timer -= delta
 	strike_timer = maxf(strike_timer - delta, 0.0)
+	overcharge_timer = maxf(overcharge_timer - delta, 0.0)
+	barrier_timer = maxf(barrier_timer - delta, 0.0)
 	_strike_angle += STRIKE_SPIN * delta
 	_drone_beams.clear()
 	if game.state == Game.State.PLAYING:
@@ -327,6 +345,10 @@ func _update_secondary(secondary_pressed: bool) -> void:
 	match run.secondary:
 		"volt_storm":
 			game.storm_burst(self, s.damage * slot_effect_mult("secondary"), s.targets, s.range)
+		"volt_overcharge":
+			overcharge_timer = s.duration * slot_effect_mult("secondary")
+		"aegis_barrier":
+			barrier_timer = s.duration * slot_effect_mult("secondary")
 		"acid_napalm":
 			_shoot(Vector2(10, 0), 0.0, s.speed, 0.0, {"kind": "canister", "radius": 4.0, "fuse": s.fuse,
 				"extra": {"width": s.width, "duration": s.duration * slot_effect_mult("secondary"),
@@ -393,6 +415,15 @@ func _draw() -> void:
 		var side := aim.orthogonal()
 		draw_colored_polygon(PackedVector2Array([d + aim * 5.0, d - aim * 3.0 + side * 3.0, d - aim * 3.0 - side * 3.0]), color.darkened(0.25))
 		draw_rect(Rect2(d + Vector2(-1, -0.5), Vector2(2, 1)), Color.WHITE)
+	if barrier_timer > 0.0:
+		# Bubble; flickers in its last half second.
+		var a := 0.35 if barrier_timer > 0.5 or int(barrier_timer * 20.0) % 2 == 0 else 0.1
+		draw_circle(Vector2.ZERO, BARRIER_RADIUS, Color(0.8, 0.9, 1.0, a * 0.4))
+		draw_arc(Vector2.ZERO, BARRIER_RADIUS, 0.0, TAU, 24, Color(0.85, 0.92, 1.0, a + 0.3), 1.0)
+	if overcharge_timer > 0.0 and Engine.get_physics_frames() % 6 < 3:
+		# Crackle along the hull while Overcharge is active.
+		var j := Vector2(randf_range(-8, 8), randf_range(-6, 6))
+		draw_line(j, j + Vector2(randf_range(-4, 4), randf_range(-4, 4)), Color(0.75, 0.9, 1.0), 1.0)
 	if invuln > 0.0 and int(invuln * 20.0) % 2 == 0:
 		return
 	var roll := 1.0

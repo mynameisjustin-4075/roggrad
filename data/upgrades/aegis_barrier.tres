@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "aegis_barrier"
+display_name = "Barrier"
+description = "Defensive: a bubble destroys every enemy bullet that touches your ship for 3 s. Ramming enemies still hurts. 10 s cooldown. Each level: +25% duration, -10% cooldown."
+family = "Aegis"
+rarity = 1
+max_stacks = 3
+slot = "secondary"
+incompatible_with = PackedStringArray()
