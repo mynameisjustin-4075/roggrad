@@ -4,9 +4,9 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "volt_overcharge"
-display_name = "Overcharge"
-description = "Defensive: +25% movement speed and fire rate for 6 s. 12 s cooldown. Each level: +25% duration, -10% cooldown."
+id = "volt_surge"
+display_name = "Power Surge"
+description = "Defensive: +25% movement speed and fire rate for 6 s. 24 s cooldown. Each level: +25% duration, -10% cooldown."
 family = "Volt"
 rarity = 1
 max_stacks = 3

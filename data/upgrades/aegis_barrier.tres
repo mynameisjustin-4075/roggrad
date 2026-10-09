@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 id = "aegis_barrier"
 display_name = "Barrier"
-description = "Defensive: a bubble destroys every enemy bullet that touches your ship for 3 s. Ramming enemies still hurts. 10 s cooldown. Each level: +25% duration, -10% cooldown."
+description = "Defensive: a bubble destroys every enemy bullet that touches your ship for 5 s. Ramming enemies still hurts. 20 s cooldown. Each level: +25% duration, -10% cooldown."
 family = "Aegis"
 rarity = 1
 max_stacks = 3

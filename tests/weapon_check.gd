@@ -408,9 +408,9 @@ func _check_defensive(game: Game, p: Player) -> void:
 	game._clear_enemy_bullets()
 	game.god_mode = false
 	p.run.upgrades.erase("volt_overclock")
-	_equip(game, p.run, "volt_overcharge")
+	_equip(game, p.run, "volt_surge")
 	await _frames(500, game)
-	# Overcharge: speed and fire rate x1.25 for 6 s.
+	# Power Surge: speed and fire rate x1.25 for 6 s.
 	var rate_before := p.fire_rate_mult()
 	p.position = Vector2(100, 135)
 	Input.action_press("secondary")
@@ -422,11 +422,11 @@ func _check_defensive(game: Game, p: Player) -> void:
 	Input.action_release("move_right")
 	var moved := p.position.x - 100.0
 	await _frames(340, game)
-	print("Overcharge: fire rate x%.2f -> x%.2f, moved %.0f px in 0.5 s (normal 60), back to x%.2f after 6 s, cooldown %.1f s" % [
+	print("Power Surge: fire rate x%.2f -> x%.2f, moved %.0f px in 0.5 s (normal 60), back to x%.2f after 6 s, cooldown %.1f s" % [
 		rate_before, rate_during, moved, p.fire_rate_mult(), p.secondary_cooldown])
-	# Barrier: bullets fired straight at the ship are destroyed for 3 s; afterward they hit.
+	# Barrier: bullets fired straight at the ship are destroyed for 5 s; afterward they hit.
 	_equip(game, p.run, "aegis_barrier")
-	await _frames(800, game)
+	await _frames(1200, game)
 	p.position = Vector2(200, 135)
 	p.invuln = 0.0
 	var hull := p.run.hull
@@ -437,7 +437,7 @@ func _check_defensive(game: Game, p: Player) -> void:
 		game.spawn_enemy_bullet(p.position + Vector2(40 + i * 10, 0), Vector2(-120, 0))
 	await _frames(60, game)
 	var hull_during := p.run.hull
-	await _frames(150, game)
+	await _frames(270, game)
 	game.spawn_enemy_bullet(p.position + Vector2(30, 0), Vector2(-120, 0))
 	await _frames(40, game)
 	print("Barrier: hull %d -> %d with 5 bullets during barrier, after it ends a bullet hits: %s, cooldown %.1f s" % [
