@@ -125,10 +125,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Debug builds only. F1: toggle invincibility. F2: clear the current room.
 ## F3 / F5 / F6: cycle P1's primary / secondary / dodge. F4: give P1 a drone.
-## F7: jump straight to the world's boss room.
+## F7: jump straight to the world's boss room. N: drop the boss to its next phase
+## (not F8: that is the Godot editor's "stop game" shortcut).
 func _debug_key(keycode: Key) -> void:
 	var p1 := RunState.players[0]
 	match keycode:
+		KEY_N:
+			if boss and is_instance_valid(boss) and not boss.dead:
+				var next_threshold := boss.max_hp * (2.0 / 3.0 if boss.hp >= boss.max_hp * 2.0 / 3.0 else 1.0 / 3.0)
+				boss.hp = minf(boss.hp, next_threshold - 1.0)
+				_banner("Boss phase skip")
 		KEY_F7:
 			if state == State.PLAYING:
 				for e in enemies.get_children():

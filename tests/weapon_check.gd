@@ -450,40 +450,45 @@ func _check_boss(game: Game, p: Player) -> void:
 	_clear_enemies(game)
 	game._clear_enemy_bullets()
 	await _frames(10, game)
-	game.god_mode = false
 	var boss := Boss.new()
 	boss.game = game
 	boss.setup_boss(1.0)
 	boss.position = Vector2(Boss.PARK_X, 180)
 	game.enemies.add_child(boss)
 	game.boss = boss
-	p.position = Vector2(60, 340)  # out of the way
-	p.invuln = 99.0
-	await _frames(400, game)  # ~6.7 s: one launch at 3 s, the next at 8 s
-	var minions := game.enemies.get_children().filter(func(e): return e.summoned_by == boss and e.kind == "grunt").size()
-	print("Boss: HP %d, radius %d, grunts launched after 6.7 s: %d" % [boss.max_hp, boss.radius, minions])
-	# Drop below half HP: two beam drones detach.
-	boss.hp = boss.max_hp * 0.49
+	p.position = Vector2(60, 340)
+	await _frames(360, game)
+	var summoned := func(kind): return game.enemies.get_children().filter(func(e): return not e.is_queued_for_deletion() and e.summoned_by == boss and e.kind == kind).size()
+	print("Boss phase 1: HP %d, speed x%.2f, drones %d, grunts %d" % [boss.max_hp, boss.phase_speed(), summoned.call("boss_drone"), summoned.call("grunt")])
+	boss.hp = boss.max_hp * 0.6
 	await _frames(2, game)
-	var drones := game.enemies.get_children().filter(func(e): return e is BossDrone)
-	print("Boss: drones released at half HP: %d" % drones.size())
-	# Put the player in line with the top drone's next beam and wait for it to fire.
-	var d: BossDrone = drones[0]
-	p.invuln = 0.0
-	var hull := p.run.hull
-	for f in 300:
-		game.state = Game.State.PLAYING
-		game.room_time = -100.0
-		if d.state == "telegraph":
-			p.position = Vector2(100, d.position.y)
-		await get_tree().physics_frame
-		if p.run.hull < hull:
-			break
-	print("Boss drone beam: hit a player sitting in its lane %s" % (p.run.hull < hull))
-	# Kill the boss: drones and launched grunts go with it.
+	print("Boss phase 2: phase %d, speed x%.2f, drones %d, grunts %d" % [boss.phase, boss.phase_speed(), summoned.call("boss_drone"), summoned.call("grunt")])
+	# X pattern: a player above the cross gets caught; one behind it is safe.
+	for spot in [["above the cross", Vector2(260, 90)], ["behind the cross", Vector2(110, 180)]]:
+		game._clear_enemy_bullets()
+		game.god_mode = true
+		boss._start_drone_pattern("x")
+		p.position = spot[1]
+		await _frames(int(Boss.DRONE_MOVE_TIME / boss.phase_speed() * 60) + 2, game)  # aim locks on the player now
+		game.god_mode = false
+		p.invuln = 0.0
+		var hull := p.run.hull
+		for f in int((Boss.DRONE_TELEGRAPH_TIME / boss.phase_speed() + Boss.DRONE_FIRE_TIME) * 60):
+			game.state = Game.State.PLAYING
+			game.room_time = -100.0
+			game._clear_enemy_bullets()  # only the beams count here
+			p.position = spot[1]
+			await get_tree().physics_frame
+		print("Boss X pattern: player %s hit %s" % [spot[0], p.run.hull < hull])
+		p.run.hull = p.run.max_hull
+		p.invuln = 99.0
+	boss.hp = boss.max_hp * 0.3
+	await _frames(240, game)
+	print("Boss phase 3: phase %d, speed x%.2f, grunts launched %d" % [boss.phase, boss.phase_speed(), summoned.call("grunt")])
 	boss.take_damage(99999.0, p.run)
 	await _frames(2, game)
 	var left := game.enemies.get_children().filter(func(e): return not e.is_queued_for_deletion() and e.summoned_by == boss).size()
 	print("Boss killed: summoned enemies left %d" % left)
+	p.invuln = 0.0
 	p.run.hull = p.run.max_hull
 	game.god_mode = true
