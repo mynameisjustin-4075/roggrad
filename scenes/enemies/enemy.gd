@@ -41,6 +41,8 @@ var acid_stacks := 0
 var acid_power := 0
 var acid_timer := 0.0
 var acid_owner: PlayerRun = null
+## The boss that launched this enemy, if any; it explodes when that boss dies.
+var summoned_by: Node2D = null
 var frozen_timer := 0.0
 ## Freeze durations are multiplied by this.
 var freeze_resist := 1.0

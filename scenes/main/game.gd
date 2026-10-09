@@ -125,9 +125,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Debug builds only. F1: toggle invincibility. F2: clear the current room.
 ## F3 / F5 / F6: cycle P1's primary / secondary / dodge. F4: give P1 a drone.
+## F7: jump straight to the world's boss room.
 func _debug_key(keycode: Key) -> void:
 	var p1 := RunState.players[0]
 	match keycode:
+		KEY_F7:
+			if state == State.PLAYING:
+				for e in enemies.get_children():
+					e.dead = true
+					e.queue_free()
+				_clear_enemy_bullets()
+				_start_room(world.rooms.size() - 1)
 		KEY_F3:
 			_debug_cycle(p1, "primary")
 		KEY_F5:
@@ -258,6 +266,17 @@ func _physics_process(delta: float) -> void:
 				if p.ctl.pressed("start") or p.ctl.pressed("confirm"):
 					get_tree().reload_current_scene()
 					return
+
+
+## An enemy launched mid-fight by a boss (e.g. the Leviathan's grunts).
+func spawn_minion(kind: String, pos: Vector2, summoner: Node2D) -> void:
+	var e := Enemy.new()
+	e.game = self
+	e.setup(kind, 1.0 + HP_PER_EXTRA_PLAYER * (players.size() - 1))
+	e.position = pos
+	e.base_y = pos.y
+	e.summoned_by = summoner
+	enemies.add_child(e)
 
 
 func _live_enemy_count() -> int:
@@ -655,6 +674,12 @@ func on_enemy_killed(e: Enemy, run: PlayerRun) -> void:
 		boss = null
 		shake = 1.5
 		_clear_enemy_bullets()
+		# Its drones and launched grunts go down with it (no extra Scrap).
+		for m in enemies.get_children():
+			if not m.dead and m.summoned_by == e:
+				m.dead = true
+				_effect("explosion", m.position, 0.35, m.radius * 2.0, m.color)
+				m.queue_free()
 
 
 func on_player_down(p: Player) -> void:

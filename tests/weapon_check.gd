@@ -166,6 +166,7 @@ func _check_volt(game: Game, p: Player) -> void:
 	await _check_aegis(game, p)
 	await _check_acid(game, p)
 	await _check_defensive(game, p)
+	await _check_boss(game, p)
 
 
 func _equip(game: Game, run: PlayerRun, id: String) -> void:
@@ -442,4 +443,47 @@ func _check_defensive(game: Game, p: Player) -> void:
 	await _frames(40, game)
 	print("Barrier: hull %d -> %d with 5 bullets during barrier, after it ends a bullet hits: %s, cooldown %.1f s" % [
 		hull, hull_during, p.run.hull < hull_during, p.secondary_cooldown])
+	game.god_mode = true
+
+
+func _check_boss(game: Game, p: Player) -> void:
+	_clear_enemies(game)
+	game._clear_enemy_bullets()
+	await _frames(10, game)
+	game.god_mode = false
+	var boss := Boss.new()
+	boss.game = game
+	boss.setup_boss(1.0)
+	boss.position = Vector2(Boss.PARK_X, 180)
+	game.enemies.add_child(boss)
+	game.boss = boss
+	p.position = Vector2(60, 340)  # out of the way
+	p.invuln = 99.0
+	await _frames(400, game)  # ~6.7 s: one launch at 3 s, the next at 8 s
+	var minions := game.enemies.get_children().filter(func(e): return e.summoned_by == boss and e.kind == "grunt").size()
+	print("Boss: HP %d, radius %d, grunts launched after 6.7 s: %d" % [boss.max_hp, boss.radius, minions])
+	# Drop below half HP: two beam drones detach.
+	boss.hp = boss.max_hp * 0.49
+	await _frames(2, game)
+	var drones := game.enemies.get_children().filter(func(e): return e is BossDrone)
+	print("Boss: drones released at half HP: %d" % drones.size())
+	# Put the player in line with the top drone's next beam and wait for it to fire.
+	var d: BossDrone = drones[0]
+	p.invuln = 0.0
+	var hull := p.run.hull
+	for f in 300:
+		game.state = Game.State.PLAYING
+		game.room_time = -100.0
+		if d.state == "telegraph":
+			p.position = Vector2(100, d.position.y)
+		await get_tree().physics_frame
+		if p.run.hull < hull:
+			break
+	print("Boss drone beam: hit a player sitting in its lane %s" % (p.run.hull < hull))
+	# Kill the boss: drones and launched grunts go with it.
+	boss.take_damage(99999.0, p.run)
+	await _frames(2, game)
+	var left := game.enemies.get_children().filter(func(e): return not e.is_queued_for_deletion() and e.summoned_by == boss).size()
+	print("Boss killed: summoned enemies left %d" % left)
+	p.run.hull = p.run.max_hull
 	game.god_mode = true
