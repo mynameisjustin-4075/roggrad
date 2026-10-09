@@ -2,7 +2,7 @@ class_name Game
 extends Node2D
 ## Runs one world: rooms in order, an upgrade pick per player after each room,
 ## then the boss. Builds its child nodes in code; collision is simple distance
-## checks, which is plenty for a 480x270 shmup.
+## checks, which is plenty for a 640x360 shmup.
 
 enum State { PLAYING, PICKING, VICTORY, GAME_OVER }
 
@@ -106,7 +106,7 @@ func _add_player(devices: Array) -> void:
 	var run := RunState.add_player(devices)
 	var p := Player.new()
 	p.setup(run, self, PLAYER_COLORS[run.index])
-	p.position = Vector2(60, 90 + run.index * 30)
+	p.position = Vector2(80, 120 + run.index * 40)
 	players_node.add_child(p)
 	players.append(p)
 
@@ -207,14 +207,14 @@ func _start_room(index: int) -> void:
 	for wave in room.waves:
 		var count := int(round(wave.get("count", 1) * (1.0 + SPAWNS_PER_EXTRA_PLAYER * extra)))
 		for k in count:
-			var y: float = wave.get("y", 135.0) + k * wave.get("dy", 0.0)
+			var y: float = wave.get("y", 180.0) + k * wave.get("dy", 0.0)
 			_spawn_queue.append({
 				"t": wave.get("time", 0.0) + k * wave.get("interval", 0.3),
 				"enemy": wave.get("enemy", "grunt"),
-				"y": fposmod(y - 20.0, 230.0) + 20.0,
+				"y": fposmod(y - 24.0, 312.0) + 24.0,
 			})
 	if room.is_boss:
-		_spawn_queue.append({"t": 1.5, "enemy": "boss", "y": 135.0})
+		_spawn_queue.append({"t": 1.5, "enemy": "boss", "y": 180.0})
 	_spawn_queue.sort_custom(func(a, b): return a.t < b.t)
 	for p in players:
 		if not p.run.alive:
@@ -230,13 +230,13 @@ func _spawn(entry: Dictionary) -> void:
 		boss = Boss.new()
 		boss.game = self
 		boss.setup_boss(hp_mult)
-		boss.position = Vector2(540, 135)
+		boss.position = Vector2(720, 180)
 		enemies.add_child(boss)
 		return
 	var e := Enemy.new()
 	e.game = self
 	e.setup(entry.enemy, hp_mult)
-	e.position = Vector2(500, entry.y)
+	e.position = Vector2(670, entry.y)
 	e.base_y = entry.y
 	enemies.add_child(e)
 
@@ -351,7 +351,7 @@ func spawn_enemy_bullet(pos: Vector2, vel: Vector2, shooter: Node2D = null) -> v
 	b.shooter = shooter
 	b.position = pos
 	b.vel = vel
-	b.radius = 3.0
+	b.radius = 4.0
 	b.color = Color(1.0, 0.35, 0.7)
 	b.enemy_bullet = true
 	enemy_bullets.add_child(b)
@@ -386,7 +386,7 @@ func _collide() -> void:
 		for p in players:
 			var dist: float = b.position.distance_to(p.position)
 			if p.run.alive and p.has_barrier() and dist < b.radius + Player.BARRIER_RADIUS:
-				_effect("explosion", b.position, 0.15, 5.0, AEGIS_COLOR)
+				_effect("explosion", b.position, 0.15, 7.0, AEGIS_COLOR)
 				b.queue_free()
 				break
 			if p.can_be_hit() and dist < b.radius + Player.HITBOX:
@@ -399,7 +399,7 @@ func _collide() -> void:
 		if e.dead:
 			continue
 		for p in players:
-			if p.can_be_hit() and e.position.distance_to(p.position) < e.radius + Player.HITBOX + 2.0:
+			if p.can_be_hit() and e.position.distance_to(p.position) < e.radius + Player.HITBOX + 3.0:
 				p.take_hit()
 				if not e is Boss:
 					e.take_damage(5.0, p.run)
@@ -432,7 +432,7 @@ func _apply_on_hit(e: Enemy, damage: float, run: PlayerRun) -> void:
 		e.apply_slow(FROST_WAKE_SLOW, SLOW_DURATION)
 	var arc := run.stacks("volt_arc")
 	if arc > 0 and randf() < 0.25 * arc:
-		var target := _nearest_enemy(e.position, 70.0, [e])
+		var target := _nearest_enemy(e.position, 93.0, [e])
 		if target:
 			target.take_damage(damage * 0.5, run)
 			_effect("arc", e.position, 0.15, 0.0, LIGHTNING_COLOR, target.position)
@@ -446,7 +446,7 @@ func nearest_enemy(from: Vector2, max_dist: float) -> Enemy:
 ## chain onward. `chains` = -1 uses the weapon's normal 1 + level.
 func lightning_zap(p: Player, target: Enemy, damage: float, origin := Vector2.INF, chains := -1) -> void:
 	var run := p.run
-	var from := p.position + Vector2(6, 0) if origin == Vector2.INF else origin
+	var from := p.position + Vector2(24, 0) if origin == Vector2.INF else origin
 	_effect("arc", from, 0.2, 0.0, LIGHTNING_COLOR, target.position)
 	target.take_damage(damage, run)
 	_apply_on_hit(target, damage, run)
@@ -481,10 +481,10 @@ func _ice_blast(b: Bullet) -> void:
 ## fire running the full height of the screen; enemies inside gain acid stacks.
 func _napalm(b: Bullet) -> void:
 	var run := b.owner_run
-	var x: float = clampf(b.position.x, 10.0, 470.0)
+	var x: float = clampf(b.position.x, 14.0, 626.0)
 	var h := Hazard.new()
 	h.position = Vector2(x, 0)
-	h.rect = Rect2(-b.extra.width / 2.0, 0, b.extra.width, 270)
+	h.rect = Rect2(-b.extra.width / 2.0, 0, b.extra.width, 360)
 	h.life = b.extra.duration
 	h.max_life = h.life
 	h.tick = b.extra.tick
@@ -495,7 +495,7 @@ func _napalm(b: Bullet) -> void:
 		for e in inside:
 			e.add_acid(power, run)
 	hazards.add_child(h)
-	_effect("explosion", b.position, 0.25, 14.0, Color(1, 0.55, 0.15))
+	_effect("explosion", b.position, 0.25, 19.0, Color(1, 0.55, 0.15))
 	b.queue_free()
 
 
@@ -519,7 +519,7 @@ func scorch_patch(p: Player, pos: Vector2, radius: float, duration: float, power
 
 ## Phase Shift graze feedback: a small bright flash where the bullet passed.
 func graze_spark(at: Vector2) -> void:
-	_effect("explosion", at, 0.2, 8.0, AEGIS_COLOR)
+	_effect("explosion", at, 0.2, 11.0, AEGIS_COLOR)
 
 
 ## Aegis secondary, Repulsor: every enemy bullet within `radius` is sent back,
@@ -532,8 +532,8 @@ func repulsor(p: Player, radius: float, bullet_damage: float, blast_damage: floa
 			continue
 		var target = b.shooter if is_instance_valid(b.shooter) and not b.shooter.dead else null
 		var dir: Vector2 = (target.position - b.position).normalized() if target else -b.vel.normalized()
-		spawn_player_bullet(b.position, dir * 220.0, bullet_damage, p.run, {
-			"kind": "reflect", "radius": 3.0, "target": target, "fuse": 3.0})
+		spawn_player_bullet(b.position, dir * 293.0, bullet_damage, p.run, {
+			"kind": "reflect", "radius": 4.0, "target": target, "fuse": 3.0})
 		b.queue_free()
 		returned += 1
 	for e in enemies.get_children():
@@ -572,7 +572,7 @@ func _chain_lightning(from_e: Enemy, damage: float, jumps: int, run: PlayerRun) 
 	var hit: Array = [from_e]
 	var cur := from_e
 	for j in jumps:
-		var target := _nearest_enemy(cur.position, 80.0, hit)
+		var target := _nearest_enemy(cur.position, 107.0, hit)
 		if target == null:
 			return
 		_effect("arc", cur.position, 0.2, 0.0, LIGHTNING_COLOR, target.position)
@@ -658,7 +658,7 @@ func on_enemy_killed(e: Enemy, run: PlayerRun) -> void:
 
 
 func on_player_down(p: Player) -> void:
-	_effect("explosion", p.position, 0.6, 24.0, p.color)
+	_effect("explosion", p.position, 0.6, 32.0, p.color)
 	if RunState.alive_count() == 0:
 		_end_run(State.GAME_OVER)
 

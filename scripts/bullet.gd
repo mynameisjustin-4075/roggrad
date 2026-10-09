@@ -6,8 +6,8 @@ extends Node2D
 ## "reflect" (Repulsor: an enemy bullet sent back, steering toward its shooter),
 ## "canister" (Napalm Line: lands on impact or at its fuse and leaves a fire strip).
 
-const MISSILE_TOP_SPEED := 420.0
-const MISSILE_ACCEL := 600.0
+const MISSILE_TOP_SPEED := 560.0
+const MISSILE_ACCEL := 800.0
 
 var kind := "pellet"
 var vel := Vector2.ZERO
@@ -45,7 +45,7 @@ func _physics_process(delta: float) -> void:
 	position += vel * delta
 	if kind == "ice_bomb":
 		rotation += 8.0 * delta
-	if position.x < -16 or position.x > 496 or position.y < -16 or position.y > 286:
+	if position.x < -16 or position.x > 656 or position.y < -16 or position.y > 376:
 		queue_free()
 	if kind == "missile" or kind == "homing":
 		queue_redraw()

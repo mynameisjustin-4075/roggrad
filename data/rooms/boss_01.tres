@@ -5,6 +5,6 @@
 [resource]
 script = ExtResource("1_script")
 display_name = "Debris Belt - Boss"
-scroll_speed = 30.0
+scroll_speed = 40.0
 is_boss = true
 waves = []

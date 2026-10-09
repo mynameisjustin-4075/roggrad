@@ -9,8 +9,8 @@ var _stars: Array = []
 
 
 func _ready() -> void:
-	for i in 90:
-		_stars.append({"p": Vector2(randf() * 480.0, randf() * 270.0), "l": randi() % 3})
+	for i in 140:
+		_stars.append({"p": Vector2(randf() * 640.0, randf() * 360.0), "l": randi() % 3})
 
 
 func _process(delta: float) -> void:
@@ -18,13 +18,13 @@ func _process(delta: float) -> void:
 		var p: Vector2 = s.p
 		p.x -= speed * (0.3 + 0.5 * s.l) * delta
 		if p.x < 0.0:
-			p.x += 480.0
-			p.y = randf() * 270.0
+			p.x += 640.0
+			p.y = randf() * 360.0
 		s.p = p
 	queue_redraw()
 
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 480, 270), Color(0.04, 0.05, 0.1))
+	draw_rect(Rect2(0, 0, 640, 360), Color(0.04, 0.05, 0.1))
 	for s in _stars:
 		draw_rect(Rect2(s.p.floor(), Vector2.ONE), LAYER_COLORS[s.l])

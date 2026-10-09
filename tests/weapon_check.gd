@@ -196,7 +196,7 @@ func _check_cryo(game: Game, p: Player) -> void:
 	_clear_enemies(game)
 	await _frames(400, game)
 	p.position = Vector2(100, 60)
-	var at_fuse := _spawn_dummy(game, Vector2(100 + 10 + 176, 60 + 28))
+	var at_fuse := _spawn_dummy(game, Vector2(100 + 30 + 234, 60 + 28))
 	Input.action_press("secondary")
 	await _frames(2, game)
 	Input.action_release("secondary")
@@ -422,7 +422,7 @@ func _check_defensive(game: Game, p: Player) -> void:
 	Input.action_release("move_right")
 	var moved := p.position.x - 100.0
 	await _frames(340, game)
-	print("Power Surge: fire rate x%.2f -> x%.2f, moved %.0f px in 0.5 s (normal 60), back to x%.2f after 6 s, cooldown %.1f s" % [
+	print("Power Surge: fire rate x%.2f -> x%.2f, moved %.0f px in 0.5 s (normal 80), back to x%.2f after 6 s, cooldown %.1f s" % [
 		rate_before, rate_during, moved, p.fire_rate_mult(), p.secondary_cooldown])
 	# Barrier: bullets fired straight at the ship are destroyed for 5 s; afterward they hit.
 	_equip(game, p.run, "aegis_barrier")

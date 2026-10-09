@@ -1,0 +1,12 @@
+{
+  "project_id": "68f15d3a-0526-42c7-80cc-f72e13ad51d9",
+  "assets": [
+    {
+      "asset_id": "2182d17c-c1b1-4928-bc1a-be5b429c2648",
+      "sha12": "380f6cd32ece",
+      "label": "Lancer - player ship (style anchor)",
+      "source": "art/source/lancer_source.png",
+      "game_sprite": "art/sprites/player/lancer.png"
+    }
+  ]
+}

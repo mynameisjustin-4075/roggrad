@@ -53,18 +53,18 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var font := ThemeDB.fallback_font
-	draw_rect(Rect2(0, 0, 480, 270), Color(0, 0, 0, 0.75))
-	draw_string(font, Vector2(0, 44), "P%d - CHOOSE AN UPGRADE" % (run.index + 1), HORIZONTAL_ALIGNMENT_CENTER, 480, 16, color)
+	draw_rect(Rect2(0, 0, 640, 360), Color(0, 0, 0, 0.75))
+	draw_string(font, Vector2(0, 58), "P%d - CHOOSE AN UPGRADE" % (run.index + 1), HORIZONTAL_ALIGNMENT_CENTER, 640, 21, color)
 	for i in options.size():
 		var u: UpgradeData = options[i]
-		var rect := Rect2(24 + i * 148, 64, 136, 150)
+		var rect := Rect2(32 + i * 197, 85, 181, 200)
 		var fc: Color = FAMILY_COLORS.get(u.family, Color.WHITE)
 		var selected := i == index
 		draw_rect(rect, Color(0.08, 0.09, 0.16))
-		draw_rect(Rect2(rect.position, Vector2(rect.size.x, 4)), fc)
+		draw_rect(Rect2(rect.position, Vector2(rect.size.x, 5)), fc)
 		draw_rect(rect, color if selected else Color(0.3, 0.3, 0.4), false, 2.0 if selected else 1.0)
-		draw_string(font, rect.position + Vector2(8, 24), u.display_name, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 16, 12, Color.WHITE)
-		draw_string(font, rect.position + Vector2(8, 38), "%s - %s" % [u.family, RARITY_NAMES[u.rarity]], HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 16, 8, fc)
+		draw_string(font, rect.position + Vector2(10, 30), u.display_name, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 20, 16, Color.WHITE)
+		draw_string(font, rect.position + Vector2(10, 48), "%s - %s" % [u.family, RARITY_NAMES[u.rarity]], HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 20, 10, fc)
 		var level := run.stacks(u.id)
 		var note := ""
 		var is_slot := u.slot != "passive"
@@ -72,6 +72,6 @@ func _draw() -> void:
 			note = "%s - replaces %s" % [u.slot.to_upper(), run.slot_name(u.slot)]
 		elif u.max_stacks > 1:
 			note = "Level %d -> %d" % [level, level + 1]
-		draw_string(font, rect.position + Vector2(8, 50), note, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 16, 8, Color(1, 0.85, 0.5) if is_slot else Color(0.7, 0.7, 0.8))
-		draw_multiline_string(font, rect.position + Vector2(8, 68), u.description, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 16, 10, -1, Color(0.85, 0.85, 0.9))
-	draw_string(font, Vector2(0, 236), "Left / Right to choose    Fire / Enter to take it", HORIZONTAL_ALIGNMENT_CENTER, 480, 8, Color(0.6, 0.6, 0.7))
+		draw_string(font, rect.position + Vector2(10, 64), note, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 20, 10, Color(1, 0.85, 0.5) if is_slot else Color(0.7, 0.7, 0.8))
+		draw_multiline_string(font, rect.position + Vector2(10, 88), u.description, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 20, 12, -1, Color(0.85, 0.85, 0.9))
+	draw_string(font, Vector2(0, 314), "Left / Right to choose    Fire / Enter to take it", HORIZONTAL_ALIGNMENT_CENTER, 640, 11, Color(0.6, 0.6, 0.7))

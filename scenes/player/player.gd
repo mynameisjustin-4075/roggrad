@@ -5,59 +5,62 @@ extends Node2D
 ## own cooldown. Each co-op player gets one of these with their own controls
 ## and PlayerRun.
 
-const HITBOX := 2.0
-const BASE_SPEED := 120.0
+const SHIP_TEXTURE := preload("res://art/sprites/player/lancer.png")
+## Where shots and beams leave the ship, relative to its centre.
+const NOSE_X := 30.0
+const HITBOX := 3.0
+const BASE_SPEED := 160.0
 const INVULN_TIME := 1.5
-const DODGE_SPEED := 380.0
+const DODGE_SPEED := 507.0
 const DODGE_DASH_TIME := 0.15
 const DODGE_IFRAMES := 0.35
 const DODGE_COOLDOWN := 1.2
 ## An enemy bullet passing this close counts as a graze (Phase Shift).
-const GRAZE_RADIUS := 12.0
+const GRAZE_RADIUS := 16.0
 ## Barrier bubble: enemy bullets touching it are destroyed.
-const BARRIER_RADIUS := 13.0
+const BARRIER_RADIUS := 22.0
 ## Drones copy the main weapon's shot at this fraction of its damage.
 const DRONE_DAMAGE_MULT := 0.5
 ## Drone slots: alternate above and below the ship, second pair further out.
-const DRONE_OFFSETS := [Vector2(-2, -16), Vector2(-2, 16), Vector2(-10, -30), Vector2(-10, 30)]
+const DRONE_OFFSETS := [Vector2(-4, -22), Vector2(-4, 22), Vector2(-14, -40), Vector2(-14, 40)]
 ## Swarm Strike: drones orbit the ship at this radius and spin speed (rad/s).
-const STRIKE_ORBIT := 24.0
+const STRIKE_ORBIT := 36.0
 const STRIKE_SPIN := 3.0
-const DRONE_BEAM_RANGE := 200.0
+const DRONE_BEAM_RANGE := 267.0
 const BEAM_TICK := 0.1
-const BEAM_HALF_WIDTH := 2.0
+const BEAM_HALF_WIDTH := 3.0
 
 ## Main-shot stats per primary weapon. Damage is per projectile (per second for the beam).
 const WEAPONS := {
-	"": {"interval": 0.12, "speed": 380.0, "damage": 0.75, "kind": "pellet"},
-	"volt_lightning": {"interval": 1.0, "damage": 6.0, "kind": "zap", "range": 200.0},
-	"cryo_lance": {"interval": 0.28, "speed": 240.0, "damage": 3.5, "kind": "lance"},
-	"nova_missiles": {"interval": 0.75, "speed": 180.0, "damage": 9.0, "kind": "missile"},
+	"": {"interval": 0.12, "speed": 507.0, "damage": 0.75, "kind": "pellet"},
+	"volt_lightning": {"interval": 1.0, "damage": 6.0, "kind": "zap", "range": 267.0},
+	"cryo_lance": {"interval": 0.28, "speed": 320.0, "damage": 3.5, "kind": "lance"},
+	"nova_missiles": {"interval": 0.75, "speed": 240.0, "damage": 9.0, "kind": "missile"},
 	"acid_beam": {"damage": 8.0, "kind": "beam"},
 }
 
 ## Secondary abilities by upgrade id; "" is the Lancer's own Charge Beam.
 const SECONDARIES := {
 	"": {"cooldown": 4.0},
-	"volt_storm": {"cooldown": 5.0, "damage": 6.0, "targets": 6, "range": 150.0},
-	"cryo_ice": {"cooldown": 6.0, "damage": 4.0, "radius": 52.0, "freeze": 3.0, "speed": 220.0, "fuse": 0.8},
-	"nova_homing": {"cooldown": 6.0, "damage": 3.0, "count": 6, "radius": 12.0, "speed": 200.0, "fuse": 3.0},
+	"volt_storm": {"cooldown": 5.0, "damage": 6.0, "targets": 6, "range": 200.0},
+	"cryo_ice": {"cooldown": 6.0, "damage": 4.0, "radius": 69.0, "freeze": 3.0, "speed": 293.0, "fuse": 0.8},
+	"nova_homing": {"cooldown": 6.0, "damage": 3.0, "count": 6, "radius": 16.0, "speed": 267.0, "fuse": 3.0},
 	"swarm_strike": {"cooldown": 12.0, "duration": 6.0, "extra_drones": 2},
-	"aegis_repulsor": {"cooldown": 6.0, "radius": 90.0, "bullet_damage": 2.0, "blast_damage": 2.0},
+	"aegis_repulsor": {"cooldown": 6.0, "radius": 120.0, "bullet_damage": 2.0, "blast_damage": 2.0},
 	# Defensive secondaries
 	"volt_surge": {"cooldown": 24.0, "duration": 6.0, "boost": 0.25},
 	"aegis_barrier": {"cooldown": 20.0, "duration": 5.0},
-	"acid_napalm": {"cooldown": 7.0, "speed": 260.0, "fuse": 0.5, "width": 20.0, "duration": 3.0, "tick": 0.4, "power": 2},
+	"acid_napalm": {"cooldown": 7.0, "speed": 347.0, "fuse": 0.5, "width": 27.0, "duration": 3.0, "tick": 0.4, "power": 2},
 }
 ## Dodge upgrades by upgrade id; "" is the plain dodge.
 const DODGES := {
 	"": {},
-	"volt_static": {"damage": 5.0, "reach": 30.0},
-	"cryo_frost_step": {"slow": 0.5, "duration": 2.0, "reach": 30.0},
-	"nova_afterburner": {"damage": 6.0, "radius": 28.0},
-	"swarm_decoy": {"duration": 2.0, "damage": 6.0, "radius": 32.0},
+	"volt_static": {"damage": 5.0, "reach": 40.0},
+	"cryo_frost_step": {"slow": 0.5, "duration": 2.0, "reach": 40.0},
+	"nova_afterburner": {"damage": 6.0, "radius": 37.0},
+	"swarm_decoy": {"duration": 2.0, "damage": 6.0, "radius": 43.0},
 	"aegis_phase": {"extra_iframes": 0.2, "refund": 0.5},
-	"acid_scorch": {"radius": 9.0, "duration": 1.5, "power": 1, "damage": 0.5, "spacing": 8.0},
+	"acid_scorch": {"radius": 12.0, "duration": 1.5, "power": 1, "damage": 0.5, "spacing": 11.0},
 }
 
 var run: PlayerRun
@@ -74,7 +77,7 @@ var _drone_beams: Array = []  # [drone offset, beam end] pairs, local, for drawi
 var shot_count := 0
 var focused := false
 var beam_on := false
-var beam_end_x := 480.0
+var beam_end_x := 640.0
 var beam_ticks := 0  # beam damage ticks; every 3rd one stacks acid
 var _beam_timer := 0.0
 var secondary_cooldown := 0.0
@@ -151,7 +154,7 @@ func _physics_process(delta: float) -> void:
 		position += _dodge_dir * DODGE_SPEED * delta
 	else:
 		position += ctl.move() * BASE_SPEED * surge_mult() * (0.5 if focused else 1.0) * delta
-	position = position.clamp(Vector2(8, 8), Vector2(472, 262))
+	position = position.clamp(Vector2(24, 12), Vector2(616, 348))
 	invuln = maxf(invuln - delta, 0.0)
 	dodge_iframes = maxf(dodge_iframes - delta, 0.0)
 	dodge_cooldown = maxf(dodge_cooldown - delta, 0.0)
@@ -189,18 +192,18 @@ func _fire() -> void:
 	var dmg: float = w.damage * level_mult()
 	var opts := {"kind": w.kind}
 	if w.kind == "missile":
-		opts["explode"] = 24.0 + 4.0 * (run.primary_level() - 1)
-		_shoot(Vector2(8, -3 if shot_count % 2 == 0 else 3), 0.0, w.speed, dmg, opts)
+		opts["explode"] = 32.0 + 5.0 * (run.primary_level() - 1)
+		_shoot(Vector2(16, -4 if shot_count % 2 == 0 else 4), 0.0, w.speed, dmg, opts)
 	elif w.kind == "pellet":
-		_shoot(Vector2(10, -2), 0.0, w.speed, dmg, opts)
-		_shoot(Vector2(10, 2), 0.0, w.speed, dmg, opts)
+		_shoot(Vector2(30, -3), 0.0, w.speed, dmg, opts)
+		_shoot(Vector2(30, 3), 0.0, w.speed, dmg, opts)
 	else:
-		_shoot(Vector2(10, 0), 0.0, w.speed, dmg, opts)
+		_shoot(Vector2(30, 0), 0.0, w.speed, dmg, opts)
 	for i in range(1, run.stacks("nova_spread") + 1):
 		for side in [-1.0, 1.0]:
-			_shoot(Vector2(8, 0), 10.0 * i * side, w.speed, dmg * 0.6, opts)
+			_shoot(Vector2(24, 0), 10.0 * i * side, w.speed, dmg * 0.6, opts)
 	if run.stacks("nova_payload") > 0 and shot_count % 5 == 0:
-		_shoot(Vector2.ZERO, 0.0, 220.0, 3.0, {"kind": "missile", "explode": 20.0})
+		_shoot(Vector2.ZERO, 0.0, 293.0, 3.0, {"kind": "missile", "explode": 27.0})
 	_fire_drones(w, dmg)
 
 
@@ -257,8 +260,8 @@ func _fire_drones(w: Dictionary, dmg: float) -> void:
 		var dir := _drone_aim(pos)
 		var opts := {"kind": w.kind}
 		if w.kind == "missile":
-			opts["explode"] = 14.0
-		game.spawn_player_bullet(pos + dir * 6.0, dir * w.speed, dmg * DRONE_DAMAGE_MULT, run, opts)
+			opts["explode"] = 19.0
+		game.spawn_player_bullet(pos + dir * 8.0, dir * w.speed, dmg * DRONE_DAMAGE_MULT, run, opts)
 
 
 func _update_beam(delta: float) -> void:
@@ -266,14 +269,14 @@ func _update_beam(delta: float) -> void:
 		_beam_timer = 0.0
 		return
 	var target = game.beam_target(position, BEAM_HALF_WIDTH)
-	beam_end_x = target.position.x - target.radius if target else 480.0
+	beam_end_x = target.position.x - target.radius if target else 640.0
 	# Drone beams: straight ahead, or locked onto the nearest enemy in a Strike.
 	var drone_targets: Array = []
 	for off in drone_offsets():
 		var pos: Vector2 = position + off
-		var t = game.nearest_enemy(pos, DRONE_BEAM_RANGE) if strike_timer > 0.0 else game.beam_target(pos, 1.5)
+		var t = game.nearest_enemy(pos, DRONE_BEAM_RANGE) if strike_timer > 0.0 else game.beam_target(pos, 2.0)
 		drone_targets.append(t)
-		var end: Vector2 = t.position - position if t else Vector2(480.0 - position.x, off.y)
+		var end: Vector2 = t.position - position if t else Vector2(640.0 - position.x, off.y)
 		_drone_beams.append([off, end])
 	_beam_timer -= delta
 	if _beam_timer <= 0.0:
@@ -350,7 +353,7 @@ func _update_secondary(secondary_pressed: bool) -> void:
 		"aegis_barrier":
 			barrier_timer = s.duration * slot_effect_mult("secondary")
 		"acid_napalm":
-			_shoot(Vector2(10, 0), 0.0, s.speed, 0.0, {"kind": "canister", "radius": 4.0, "fuse": s.fuse,
+			_shoot(Vector2(30, 0), 0.0, s.speed, 0.0, {"kind": "canister", "radius": 5.0, "fuse": s.fuse,
 				"extra": {"width": s.width, "duration": s.duration * slot_effect_mult("secondary"),
 					"tick": s.tick, "power": s.power}})
 		"aegis_repulsor":
@@ -363,17 +366,17 @@ func _update_secondary(secondary_pressed: bool) -> void:
 			var m := slot_effect_mult("secondary")
 			for i in s.count:
 				var angle := lerpf(-60.0, 60.0, float(i) / maxi(s.count - 1, 1))
-				_shoot(Vector2(4, 0), angle, s.speed, s.damage * m, {
+				_shoot(Vector2(8, 0), angle, s.speed, s.damage * m, {
 					"kind": "homing", "explode": s.radius, "fuse": s.fuse})
 		"cryo_ice":
 			# Bomb: bursts on the first enemy it touches, or after its fuse.
 			var m := slot_effect_mult("secondary")
-			_shoot(Vector2(10, 0), 0.0, s.speed, s.damage * m, {
-				"kind": "ice_bomb", "radius": 5.0, "explode": s.radius * m,
+			_shoot(Vector2(30, 0), 0.0, s.speed, s.damage * m, {
+				"kind": "ice_bomb", "radius": 7.0, "explode": s.radius * m,
 				"freeze": s.freeze, "fuse": s.fuse})
 		_:
 			# Charge Beam: a tap fires the full-power piercing shot.
-			_shoot(Vector2(12, 0), 0.0, 300.0, 10.0, {"kind": "charge", "radius": 7.0, "pierce": 99})
+			_shoot(Vector2(30, 0), 0.0, 400.0, 10.0, {"kind": "charge", "radius": 9.0, "pierce": 99})
 	secondary_cooldown = secondary_cooldown_time()
 
 
@@ -395,26 +398,26 @@ func revive() -> void:
 	run.hull = maxi(run.hull, 1)
 	visible = true
 	invuln = 2.0
-	position = Vector2(60, 135)
+	position = Vector2(80, 180)
 
 
 func _draw() -> void:
 	if not run.alive:
 		return
 	if beam_on:
-		var length := beam_end_x - position.x - 10.0
+		var length := beam_end_x - position.x - NOSE_X
 		var flicker := 0.5 + 0.2 * sin(Engine.get_physics_frames() * 0.8)
-		draw_rect(Rect2(10, -BEAM_HALF_WIDTH - 1, length, BEAM_HALF_WIDTH * 2 + 2), Color(0.6, 1.0, 0.2, flicker))
-		draw_rect(Rect2(10, -1, length, 2), Color(0.95, 1.0, 0.75))
-		draw_circle(Vector2(10 + length, 0), 3.0, Color(1.0, 0.8, 0.3, 0.8))
+		draw_rect(Rect2(NOSE_X, -BEAM_HALF_WIDTH - 1, length, BEAM_HALF_WIDTH * 2 + 2), Color(0.6, 1.0, 0.2, flicker))
+		draw_rect(Rect2(NOSE_X, -1, length, 2), Color(0.95, 1.0, 0.75))
+		draw_circle(Vector2(NOSE_X + length, 0), 4.0, Color(1.0, 0.8, 0.3, 0.8))
 	for pair in _drone_beams:
 		draw_line(pair[0], pair[1], Color(0.7, 1.0, 0.3, 0.7), 1.0)
 	for off in drone_offsets():
 		var d: Vector2 = off
 		var aim := _drone_aim(position + d)
 		var side := aim.orthogonal()
-		draw_colored_polygon(PackedVector2Array([d + aim * 5.0, d - aim * 3.0 + side * 3.0, d - aim * 3.0 - side * 3.0]), color.darkened(0.25))
-		draw_rect(Rect2(d + Vector2(-1, -0.5), Vector2(2, 1)), Color.WHITE)
+		draw_colored_polygon(PackedVector2Array([d + aim * 7.0, d - aim * 4.0 + side * 4.0, d - aim * 4.0 - side * 4.0]), color.darkened(0.25))
+		draw_rect(Rect2(d + Vector2(-1, -1), Vector2(3, 2)), Color.WHITE)
 	if barrier_timer > 0.0:
 		# Bubble; flickers in its last half second.
 		var a := 0.35 if barrier_timer > 0.5 or int(barrier_timer * 20.0) % 2 == 0 else 0.1
@@ -422,8 +425,8 @@ func _draw() -> void:
 		draw_arc(Vector2.ZERO, BARRIER_RADIUS, 0.0, TAU, 24, Color(0.85, 0.92, 1.0, a + 0.3), 1.0)
 	if surge_timer > 0.0 and Engine.get_physics_frames() % 6 < 3:
 		# Crackle along the hull while Power Surge is active.
-		var j := Vector2(randf_range(-8, 8), randf_range(-6, 6))
-		draw_line(j, j + Vector2(randf_range(-4, 4), randf_range(-4, 4)), Color(0.75, 0.9, 1.0), 1.0)
+		var j := Vector2(randf_range(-24, 24), randf_range(-9, 9))
+		draw_line(j, j + Vector2(randf_range(-5, 5), randf_range(-5, 5)), Color(0.75, 0.9, 1.0), 1.0)
 	if invuln > 0.0 and int(invuln * 20.0) % 2 == 0:
 		return
 	var roll := 1.0
@@ -432,19 +435,22 @@ func _draw() -> void:
 		var progress := 1.0 - dodge_iframes / _dodge_iframes_total
 		roll = maxf(absf(cos(progress * TAU)), 0.2)
 		for i in [1, 2]:
-			var ghost: Vector2 = -_dodge_dir * 7.0 * i
-			draw_colored_polygon(_ship_shape(ghost, roll), Color(color, 0.35 / i))
-	draw_colored_polygon(_ship_shape(Vector2.ZERO, roll), color)
-	draw_rect(Rect2(-10, -1, 3, 2), Color(1, 0.6, 0.2) if Engine.get_physics_frames() % 4 < 2 else Color(1, 0.9, 0.4))
+			_draw_ship(-_dodge_dir * 10.0 * i, roll, Color(_tint(), 0.35 / i))
+	_draw_ship(Vector2.ZERO, roll, _tint())
 	if focused:
 		draw_circle(Vector2.ZERO, HITBOX + 1.0, Color.WHITE)
 		draw_circle(Vector2.ZERO, HITBOX, Color.RED)
 	if game.players.size() > 1:
-		draw_string(ThemeDB.fallback_font, Vector2(-6, -9), "P%d" % (run.index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, color)
+		draw_string(ThemeDB.fallback_font, Vector2(-8, -16), "P%d" % (run.index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, color)
 
 
-func _ship_shape(offset: Vector2, y_scale: float) -> PackedVector2Array:
-	var pts := PackedVector2Array()
-	for p in [Vector2(10, 0), Vector2(-7, -6), Vector2(-3, 0), Vector2(-7, 6)]:
-		pts.append(offset + Vector2(p.x, p.y * y_scale))
-	return pts
+## P1 flies the ship in its own colors; other co-op players get a tint of
+## their player color so ships stay easy to tell apart.
+func _tint() -> Color:
+	return Color.WHITE if run.index == 0 else Color.WHITE.lerp(color, 0.45)
+
+
+func _draw_ship(offset: Vector2, y_scale: float, modulate_color: Color) -> void:
+	draw_set_transform(offset, 0.0, Vector2(1.0, y_scale))
+	draw_texture(SHIP_TEXTURE, -SHIP_TEXTURE.get_size() / 2.0, modulate_color)
+	draw_set_transform(Vector2.ZERO)

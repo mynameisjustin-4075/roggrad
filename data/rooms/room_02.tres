@@ -5,6 +5,6 @@
 [resource]
 script = ExtResource("1_script")
 display_name = "Debris Belt - Room 2"
-scroll_speed = 50.0
+scroll_speed = 66.7
 is_boss = false
-waves = [{"time": 1.0, "enemy": "gunner", "count": 2, "interval": 0.8, "y": 70, "dy": 130}, {"time": 3.0, "enemy": "grunt", "count": 6, "interval": 0.3, "y": 135, "dy": 0}, {"time": 6.0, "enemy": "diver", "count": 4, "interval": 0.5, "y": 40, "dy": 60}, {"time": 9.0, "enemy": "grunt", "count": 5, "interval": 0.3, "y": 60, "dy": 0}, {"time": 9.0, "enemy": "grunt", "count": 5, "interval": 0.3, "y": 210, "dy": 0}, {"time": 12.0, "enemy": "gunner", "count": 3, "interval": 0.7, "y": 50, "dy": 85}]
+waves = [{"time": 1.0, "enemy": "gunner", "count": 2, "interval": 0.8, "y": 93, "dy": 173}, {"time": 3.0, "enemy": "grunt", "count": 6, "interval": 0.3, "y": 180, "dy": 0}, {"time": 6.0, "enemy": "diver", "count": 4, "interval": 0.5, "y": 53, "dy": 80}, {"time": 9.0, "enemy": "grunt", "count": 5, "interval": 0.3, "y": 80, "dy": 0}, {"time": 9.0, "enemy": "grunt", "count": 5, "interval": 0.3, "y": 280, "dy": 0}, {"time": 12.0, "enemy": "gunner", "count": 3, "interval": 0.7, "y": 67, "dy": 113}]

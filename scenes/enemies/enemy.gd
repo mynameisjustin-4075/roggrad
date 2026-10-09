@@ -4,9 +4,9 @@ extends Node2D
 ## they move to EnemyData resources once art arrives.
 
 const TYPES := {
-	"grunt": {"hp": 3.0, "radius": 6.0, "speed": 70.0, "pattern": "sine", "color": Color(0.9, 0.4, 0.3), "scrap": 1},
-	"gunner": {"hp": 10.0, "radius": 8.0, "speed": 35.0, "pattern": "stop", "fire": "aimed", "fire_interval": 1.4, "color": Color(0.85, 0.65, 0.2), "scrap": 3},
-	"diver": {"hp": 4.0, "radius": 6.0, "speed": 120.0, "pattern": "dive", "color": Color(0.75, 0.35, 0.9), "scrap": 2},
+	"grunt": {"hp": 3.0, "radius": 8.0, "speed": 93.0, "pattern": "sine", "color": Color(0.9, 0.4, 0.3), "scrap": 1},
+	"gunner": {"hp": 10.0, "radius": 11.0, "speed": 47.0, "pattern": "stop", "fire": "aimed", "fire_interval": 1.4, "color": Color(0.85, 0.65, 0.2), "scrap": 3},
+	"diver": {"hp": 4.0, "radius": 8.0, "speed": 160.0, "pattern": "dive", "color": Color(0.75, 0.35, 0.9), "scrap": 2},
 }
 const ACID_DPS := 1.5
 
@@ -22,7 +22,7 @@ var fire_interval := 1.5
 var color := Color.RED
 var scrap := 1
 var dead := false
-var base_y := 135.0
+var base_y := 180.0
 var t := 0.0
 var fire_timer := 0.0
 var flash := 0.0
@@ -73,7 +73,7 @@ func _physics_process(delta: float) -> void:
 	if acid_stacks > 0:
 		_tick_acid(delta)
 	flash = maxf(flash - delta, 0.0)
-	if position.x < -40.0 or position.y < -60.0 or position.y > 330.0:
+	if position.x < -53.0 or position.y < -80.0 or position.y > 440.0:
 		dead = true
 		queue_free()
 	queue_redraw()
@@ -83,13 +83,13 @@ func _move(delta: float) -> void:
 	match pattern:
 		"sine":
 			position.x -= speed * delta
-			position.y = base_y + sin(t * 3.0) * 22.0
+			position.y = base_y + sin(t * 3.0) * 29.0
 		"stop":
-			if position.x > 400.0:
+			if position.x > 533.0:
 				position.x -= speed * 2.0 * delta
 			else:
 				position.x -= speed * 0.2 * delta
-			position.y = base_y + sin(t * 1.2) * 10.0
+			position.y = base_y + sin(t * 1.2) * 13.0
 		"dive":
 			if t < 0.7:
 				position.x -= speed * 0.4 * delta
@@ -103,14 +103,14 @@ func _move(delta: float) -> void:
 
 
 func _update_fire(delta: float) -> void:
-	if fire_mode == "" or position.x > 470.0:
+	if fire_mode == "" or position.x > 627.0:
 		return
 	fire_timer -= delta
 	if fire_timer <= 0.0:
 		fire_timer = fire_interval
 		var p = game.aim_target(position)
 		if p:
-			game.spawn_enemy_bullet(position, (p.position - position).normalized() * 90.0, self)
+			game.spawn_enemy_bullet(position, (p.position - position).normalized() * 120.0, self)
 
 
 func add_acid(power: int, source: PlayerRun) -> void:
@@ -163,12 +163,12 @@ func _draw() -> void:
 	var c := Color.WHITE if flash > 0.0 else color
 	match kind:
 		"grunt":
-			draw_colored_polygon(PackedVector2Array([Vector2(-6, 0), Vector2(0, -5), Vector2(6, 0), Vector2(0, 5)]), c)
+			draw_colored_polygon(PackedVector2Array([Vector2(-8, 0), Vector2(0, -7), Vector2(8, 0), Vector2(0, 7)]), c)
 		"gunner":
-			draw_rect(Rect2(-8, -6, 16, 12), c)
-			draw_rect(Rect2(-12, -1, 4, 2), c.darkened(0.3))
+			draw_rect(Rect2(-11, -8, 22, 16), c)
+			draw_rect(Rect2(-16, -1, 5, 3), c.darkened(0.3))
 		"diver":
-			draw_colored_polygon(PackedVector2Array([Vector2(-7, 0), Vector2(6, -5), Vector2(3, 0), Vector2(6, 5)]), c)
+			draw_colored_polygon(PackedVector2Array([Vector2(-9, 0), Vector2(8, -7), Vector2(4, 0), Vector2(8, 7)]), c)
 	_draw_status()
 
 
