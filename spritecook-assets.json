@@ -42,6 +42,55 @@
       "label": "Leviathan beam drone",
       "source": "art/source/bosses/beam_drone_source.png",
       "game_sprite": "art/sprites/bosses/beam_drone.png"
+    },
+    {
+      "asset_id": "0d1bd654-309c-489a-af65-bbef79d19c88",
+      "sha12": "27153f352712",
+      "label": "Debris Belt backdrop (nebula + asteroid band)",
+      "source": "art/source/background/debris_belt_backdrop_source.png",
+      "game_sprite": "art/sprites/background/ (see tools/art/background.py)"
+    },
+    {
+      "asset_id": "3f5d6930-c990-4f5b-8df4-66ff940e73ed",
+      "sha12": "eb51403ca9c6",
+      "label": "Debris sheet A (6 pieces)",
+      "source": "art/source/background/debris_sheet_a.png",
+      "game_sprite": "art/sprites/background/ (see tools/art/background.py)"
+    },
+    {
+      "asset_id": "dfa1de32-55a4-45d0-9aab-3f5843d74558",
+      "sha12": "22c3759b2fef",
+      "label": "Debris sheet B (6 pieces)",
+      "source": "art/source/background/debris_sheet_b.png",
+      "game_sprite": "art/sprites/background/ (see tools/art/background.py)"
+    },
+    {
+      "asset_id": "a5abf0c7-7c7e-4e67-83c2-4a95c6333216",
+      "sha12": "57de6ab937ec",
+      "label": "Derelict wreck A",
+      "source": "art/source/background/wreck_a_source.png",
+      "game_sprite": "art/sprites/background/ (see tools/art/background.py)"
+    },
+    {
+      "asset_id": "7860e1b7-f62d-4053-823e-aa50aafcc155",
+      "sha12": "51705b0af00c",
+      "label": "Derelict wreck B",
+      "source": "art/source/background/wreck_b_source.png",
+      "game_sprite": "art/sprites/background/ (see tools/art/background.py)"
+    },
+    {
+      "asset_id": "4f588f19-f57e-42ad-8ec2-0617d2518482",
+      "sha12": "01993f553e5d",
+      "label": "Derelict wreck C",
+      "source": "art/source/background/wreck_c_source.png",
+      "game_sprite": "art/sprites/background/ (see tools/art/background.py)"
+    },
+    {
+      "asset_id": "9e352ffc-f167-46a8-b5eb-236658dc4728",
+      "sha12": "ed30ee1a7d96",
+      "label": "Derelict wreck D",
+      "source": "art/source/background/wreck_d_source.png",
+      "game_sprite": "art/sprites/background/ (see tools/art/background.py)"
     }
   ]
 }

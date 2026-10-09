@@ -35,7 +35,7 @@ var _spawn_queue: Array = []
 var _upgrade_library: Array[UpgradeData] = []
 var _pick_queue: Array[PlayerRun] = []
 
-var starfield: Starfield
+var background: Background
 var world_root: Node2D
 var enemies: Node2D
 var decoys: Node2D
@@ -58,8 +58,8 @@ func _ready() -> void:
 
 
 func _build_nodes() -> void:
-	starfield = Starfield.new()
-	add_child(starfield)
+	background = Background.new()
+	add_child(background)
 	world_root = Node2D.new()
 	add_child(world_root)
 	hazards = _add_layer("Hazards")
@@ -233,7 +233,7 @@ func _start_room(index: int) -> void:
 	for p in players:
 		if not p.run.alive:
 			p.revive()
-	starfield.speed = room.scroll_speed
+	background.speed = room.scroll_speed
 	state = State.PLAYING
 	_banner(world.boss_name + " APPROACHING" if room.is_boss else room.display_name)
 
