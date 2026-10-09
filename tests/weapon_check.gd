@@ -463,8 +463,8 @@ func _check_boss(game: Game, p: Player) -> void:
 	boss.hp = boss.max_hp * 0.6
 	await _frames(2, game)
 	print("Boss phase 2: phase %d, speed x%.2f, drones %d, grunts %d" % [boss.phase, boss.phase_speed(), summoned.call("boss_drone"), summoned.call("grunt")])
-	# X pattern: a player above the cross gets caught; one behind it is safe.
-	for spot in [["above the cross", Vector2(260, 90)], ["behind the cross", Vector2(110, 180)]]:
+	# X pattern: a player on the cross gets caught; the top/bottom edges and behind it stay safe.
+	for spot in [["on the cross", Vector2(260, 180)], ["near the top edge", Vector2(260, 30)], ["near the bottom edge", Vector2(260, 330)], ["behind the cross", Vector2(110, 180)]]:
 		game._clear_enemy_bullets()
 		game.god_mode = true
 		boss._start_drone_pattern("x")

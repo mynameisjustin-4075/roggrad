@@ -20,6 +20,8 @@ const DRONE_MOVE_TIME := 1.5
 const DRONE_TELEGRAPH_TIME := 1.0
 const DRONE_FIRE_TIME := 2.0
 const DRONE_X := 470.0
+## X pattern: how far the drones slide toward the crossing column while firing.
+const X_SLIDE := 0.5
 const DRONE_PATTERNS := ["lanes", "angled", "x"]
 const MINION_PATTERNS := ["pair", "stream", "wall"]
 ## Where the drones sit on the hull until released (top and bottom).
@@ -220,12 +222,13 @@ func _sweep_drones(alive: Array, delta: float) -> void:
 			for d in alive:
 				d.aim += (-0.13 if d.lane == 0 else 0.13) * delta
 		"x":
-			# Slide along the edges toward the crossing column, swinging both
-			# beams toward vertical: the wedges above and below the cross close,
-			# so the player has to move forward or back.
+			# Slide along the edges halfway toward the crossing column, swinging
+			# both beams steeper so the player has to move off the cross. Only
+			# halfway, so the wedges above and below the cross stay open.
+			var stop_x := DRONE_X - (DRONE_X - cross.x) * X_SLIDE
 			for d in alive:
-				d.move_speed = (DRONE_X - cross.x) / DRONE_FIRE_TIME
-				d.target = Vector2(cross.x + 4.0, d.position.y)
+				d.move_speed = (DRONE_X - stop_x) / DRONE_FIRE_TIME
+				d.target = Vector2(stop_x, d.position.y)
 				d.aim = (cross - d.position).angle()
 
 
