@@ -5,6 +5,7 @@ extends Enemy
 ## what to do (`mode`: "idle", "telegraph" = flickering warning line,
 ## "fire" = beam). The beam runs from the drone along `aim` off the screen.
 
+const TEXTURE := preload("res://art/sprites/bosses/beam_drone.png")
 const BASE_HP := 100.0
 const BEAM_HALF := 6.0
 const BEAM_LENGTH := 900.0
@@ -63,16 +64,13 @@ func _draw() -> void:
 			draw_rect(Rect2(radius, -w, BEAM_LENGTH, w * 2), Color(1.0, 0.45, 0.55, 0.85))
 			draw_rect(Rect2(radius, -1.5, BEAM_LENGTH, 3), Color(1, 0.95, 0.95))
 		draw_set_transform(Vector2.ZERO)
-	draw_body(self, Vector2.ZERO, aim - PI, Color.WHITE if flash > 0.0 else color)
+	draw_body(self, Vector2.ZERO, aim - PI, HIT_FLASH if flash > 0.0 else Color.WHITE)
 	_draw_status()
 
 
-## Diamond hull with the emitter facing along `turn` + left. Shared with the
-## boss, which draws the drones docked on its hull.
-static func draw_body(canvas: CanvasItem, at: Vector2, turn: float, c: Color) -> void:
-	var pts := PackedVector2Array()
-	for p in [Vector2(-12, 0), Vector2(0, -10), Vector2(12, 0), Vector2(0, 10)]:
-		pts.append(at + p.rotated(turn))
-	canvas.draw_colored_polygon(pts, c)
-	canvas.draw_line(at + Vector2(-10, 0).rotated(turn), at + Vector2(-16, 0).rotated(turn), c.darkened(0.4), 4.0)
-	canvas.draw_circle(at, 3.0, Color(1.0, 0.3, 0.4))
+## The drone sprite (emitter on its left), turned by `turn` and tinted by
+## `modulate_color`. Shared with the boss, which draws the drones docked on its hull.
+static func draw_body(canvas: CanvasItem, at: Vector2, turn: float, modulate_color: Color) -> void:
+	canvas.draw_set_transform(at, turn)
+	canvas.draw_texture(TEXTURE, -TEXTURE.get_size() / 2.0, modulate_color)
+	canvas.draw_set_transform(Vector2.ZERO)

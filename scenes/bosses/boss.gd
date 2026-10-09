@@ -26,8 +26,14 @@ const DRONE_PATTERNS := ["lanes", "angled", "x"]
 const MINION_PATTERNS := ["pair", "stream", "wall"]
 ## A destroyed drone is rebuilt on its dock and relaunched after this long.
 const DRONE_REBUILD_TIME := 15.0
-## Where the drones sit on the hull until released (top and bottom).
-const DOCKS := [Vector2(-8, -RADIUS - 6), Vector2(-8, RADIUS + 6)]
+## Sprite (SpriteCook mining vessel). Its round hull is centred at TEXTURE_CENTER.
+const TEXTURE := preload("res://art/sprites/bosses/salvage_leviathan.png")
+const TEXTURE_CENTER := Vector2(79, 72)
+## Positions on the hull, relative to the boss's centre.
+const HANGAR := Vector2(-42, -3)  # grunts launch from here
+const CORE := Vector2(25, -2)  # infected core: pulses brighter each phase
+## Where the drones sit on the hull's docking clamps until released (top, bottom).
+const DOCKS := [Vector2(-4, -80), Vector2(-2, 82)]
 
 var phase := 1
 var hp_mult := 1.0
@@ -108,7 +114,7 @@ func _queue_minions(pattern: String) -> void:
 	match pattern:
 		"pair":  # one high, one low
 			for side in [-1.0, 1.0]:
-				_launch_queue.append({"t": 0.0, "offset": side * 0.45})
+				_launch_queue.append({"t": 0.0, "offset": side * 0.15})
 		"stream":  # five in a snaking line from the bay's centre
 			for i in 5:
 				_launch_queue.append({"t": i * 0.22, "offset": 0.0})
@@ -121,8 +127,8 @@ func _launch_due_minions(delta: float) -> void:
 	for entry in _launch_queue:
 		entry.t -= delta
 	for entry in _launch_queue.filter(func(q): return q.t <= 0.0):
-		var y := clampf(position.y + entry.offset * RADIUS * 1.6, 24.0, 336.0)
-		game.spawn_minion("grunt", Vector2(position.x - RADIUS * 0.6, y), self)
+		var y := clampf(position.y + HANGAR.y + entry.offset * RADIUS * 1.6, 24.0, 336.0)
+		game.spawn_minion("grunt", Vector2(position.x + HANGAR.x, y), self)
 	_launch_queue = _launch_queue.filter(func(q): return q.t > 0.0)
 
 
@@ -262,21 +268,16 @@ func _sweep_drones(alive: Array, delta: float) -> void:
 
 
 func _draw() -> void:
-	var c := Color.WHITE if flash > 0.0 else color
-	var hull := PackedVector2Array()
-	for i in 6:
-		hull.append(Vector2.from_angle(TAU * i / 6.0) * radius)
-	draw_colored_polygon(hull, c)
-	draw_rect(Rect2(-RADIUS - 22, -9, 26, 18), c.darkened(0.3))
-	# Launch bay on the front, where grunts come out.
-	draw_rect(Rect2(-RADIUS * 0.75, -RADIUS * 0.55, 14, RADIUS * 1.1), c.darkened(0.45))
+	draw_texture(TEXTURE, -TEXTURE_CENTER, HIT_FLASH if flash > 0.0 else Color.WHITE)
 	for lane in DOCKS.size():
 		if not drones_released:
-			BossDrone.draw_body(self, DOCKS[lane], 0.0, Color(0.55, 0.6, 0.7))
+			BossDrone.draw_body(self, DOCKS[lane], 0.0, Color.WHITE)
 		elif rebuild_timers[lane] >= 0.0:
 			# Rebuilding: the drone fades in on its dock as the timer runs down.
 			var built: float = 1.0 - rebuild_timers[lane] / DRONE_REBUILD_TIME
-			BossDrone.draw_body(self, DOCKS[lane], 0.0, Color(0.55, 0.6, 0.7, 0.15 + 0.6 * built))
+			BossDrone.draw_body(self, DOCKS[lane], 0.0, Color(1, 1, 1, 0.15 + 0.6 * built))
+	# The infected core pulses, faster and brighter with each phase.
 	var pulse := 0.5 + 0.5 * sin(t * 3.0 * phase_speed())
-	draw_circle(Vector2.ZERO, 18.0, Color(1.0, 0.2 + 0.3 * pulse, 0.2))
+	draw_circle(CORE, 6.0 + 2.0 * pulse, Color(1.0, 0.15, 0.3, 0.25 + 0.1 * phase + 0.2 * pulse))
+	draw_circle(CORE, 2.5, Color(1.0, 0.75, 0.8, 0.6 + 0.4 * pulse))
 	_draw_status()

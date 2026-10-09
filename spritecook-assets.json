@@ -28,6 +28,20 @@
       "label": "Diver - infected harpoon cutter",
       "source": "art/source/enemies/diver_source.png",
       "game_sprite": "art/sprites/enemies/diver.png"
+    },
+    {
+      "asset_id": "1d5977e5-be0e-454d-9f1f-5388cc76f98f",
+      "sha12": "7443b1a97b60",
+      "label": "Salvage Leviathan - World 1 boss (mining vessel)",
+      "source": "art/source/bosses/salvage_leviathan_source.png",
+      "game_sprite": "art/sprites/bosses/salvage_leviathan.png"
+    },
+    {
+      "asset_id": "a35433a1-e701-43b5-8bef-e8914145ea29",
+      "sha12": "b282c69a6ff8",
+      "label": "Leviathan beam drone",
+      "source": "art/source/bosses/beam_drone_source.png",
+      "game_sprite": "art/sprites/bosses/beam_drone.png"
     }
   ]
 }
