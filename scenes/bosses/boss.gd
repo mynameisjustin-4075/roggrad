@@ -24,6 +24,8 @@ const DRONE_X := 470.0
 const X_SLIDE := 0.5
 const DRONE_PATTERNS := ["lanes", "angled", "x"]
 const MINION_PATTERNS := ["pair", "stream", "wall"]
+## A destroyed drone is rebuilt on its dock and relaunched after this long.
+const DRONE_REBUILD_TIME := 15.0
 ## Where the drones sit on the hull until released (top and bottom).
 const DOCKS := [Vector2(-8, -RADIUS - 6), Vector2(-8, RADIUS + 6)]
 
@@ -32,7 +34,8 @@ var hp_mult := 1.0
 var ring_timer := 1.0
 var minion_timer := 1.5
 var drones_released := false
-var drones: Array = []
+var drones: Array = [null, null]  # by lane: 0 = top, 1 = bottom
+var rebuild_timers := [-1.0, -1.0]  # by lane; -1 = not rebuilding
 var drone_state := "move"
 var drone_time := 0.0
 var drone_pattern := ""
@@ -83,6 +86,7 @@ func _update_fire(delta: float) -> void:
 	if phase >= 2:
 		if not drones_released:
 			_release_drones()
+		_update_rebuilds(delta)
 		ring_timer -= delta
 		if ring_timer <= 0.0:
 			ring_timer = RING_INTERVAL / sp
@@ -126,19 +130,44 @@ func _launch_due_minions(delta: float) -> void:
 
 func _release_drones() -> void:
 	drones_released = true
-	for i in DOCKS.size():
-		var d := BossDrone.new()
-		d.game = game
-		d.setup_drone(i, hp_mult, self)
-		d.position = position + DOCKS[i]
-		game.enemies.add_child(d)
-		drones.append(d)
+	for lane in DOCKS.size():
+		_launch_drone(lane)
 	game.shake = maxf(game.shake, 0.8)
 	_start_drone_pattern()
 
 
+func _launch_drone(lane: int) -> void:
+	var d := BossDrone.new()
+	d.game = game
+	d.setup_drone(lane, hp_mult, self)
+	d.position = position + DOCKS[lane]
+	# Hover in its lane until the next pattern starts.
+	d.target = Vector2(DRONE_X, 90.0 if lane == 0 else 270.0)
+	game.enemies.add_child(d)
+	drones[lane] = d
+
+
+func _drone_lost(lane: int) -> bool:
+	var d = drones[lane]
+	return d == null or not is_instance_valid(d) or d.dead
+
+
+## A destroyed drone starts rebuilding on its dock; after DRONE_REBUILD_TIME it
+## launches again and joins the next pattern.
+func _update_rebuilds(delta: float) -> void:
+	for lane in DOCKS.size():
+		if not _drone_lost(lane):
+			continue
+		if rebuild_timers[lane] < 0.0:
+			rebuild_timers[lane] = DRONE_REBUILD_TIME
+		rebuild_timers[lane] -= delta
+		if rebuild_timers[lane] <= 0.0:
+			rebuild_timers[lane] = -1.0
+			_launch_drone(lane)
+
+
 func _alive_drones() -> Array:
-	return drones.filter(func(d): return is_instance_valid(d) and not d.dead)
+	return range(DOCKS.size()).filter(func(lane): return not _drone_lost(lane)).map(func(lane): return drones[lane])
 
 
 ## `force` picks a specific pattern (tests); otherwise random, never the same twice.
@@ -241,9 +270,13 @@ func _draw() -> void:
 	draw_rect(Rect2(-RADIUS - 22, -9, 26, 18), c.darkened(0.3))
 	# Launch bay on the front, where grunts come out.
 	draw_rect(Rect2(-RADIUS * 0.75, -RADIUS * 0.55, 14, RADIUS * 1.1), c.darkened(0.45))
-	if not drones_released:
-		for dock in DOCKS:
-			BossDrone.draw_body(self, dock, 0.0, Color(0.55, 0.6, 0.7))
+	for lane in DOCKS.size():
+		if not drones_released:
+			BossDrone.draw_body(self, DOCKS[lane], 0.0, Color(0.55, 0.6, 0.7))
+		elif rebuild_timers[lane] >= 0.0:
+			# Rebuilding: the drone fades in on its dock as the timer runs down.
+			var built: float = 1.0 - rebuild_timers[lane] / DRONE_REBUILD_TIME
+			BossDrone.draw_body(self, DOCKS[lane], 0.0, Color(0.55, 0.6, 0.7, 0.15 + 0.6 * built))
 	var pulse := 0.5 + 0.5 * sin(t * 3.0 * phase_speed())
 	draw_circle(Vector2.ZERO, 18.0, Color(1.0, 0.2 + 0.3 * pulse, 0.2))
 	_draw_status()

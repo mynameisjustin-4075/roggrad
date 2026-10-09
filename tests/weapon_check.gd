@@ -463,6 +463,14 @@ func _check_boss(game: Game, p: Player) -> void:
 	boss.hp = boss.max_hp * 0.6
 	await _frames(2, game)
 	print("Boss phase 2: phase %d, speed x%.2f, drones %d, grunts %d" % [boss.phase, boss.phase_speed(), summoned.call("boss_drone"), summoned.call("grunt")])
+	# Drone rebuild: shoot down the top drone; it relaunches 15 s later.
+	var top: BossDrone = boss.drones[0]
+	top.take_damage(99999.0, p.run)
+	await _frames(600, game)  # 10 s
+	var back_at_10 := not boss._drone_lost(0)
+	await _frames(310, game)  # ~15.2 s
+	print("Boss drone rebuild: back after 10 s %s, back after 15.2 s %s, is a new drone %s" % [
+		back_at_10, not boss._drone_lost(0), boss.drones[0] != top])
 	# X pattern: a player on the cross gets caught; the top/bottom edges and behind it stay safe.
 	for spot in [["on the cross", Vector2(260, 180)], ["near the top edge", Vector2(260, 30)], ["near the bottom edge", Vector2(260, 330)], ["behind the cross", Vector2(110, 180)]]:
 		game._clear_enemy_bullets()
