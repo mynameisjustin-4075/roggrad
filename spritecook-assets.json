@@ -7,6 +7,27 @@
       "label": "Lancer - player ship (style anchor)",
       "source": "art/source/lancer_source.png",
       "game_sprite": "art/sprites/player/lancer.png"
+    },
+    {
+      "asset_id": "3bf2d90f-d028-45f9-b4ca-bd06ea38b26d",
+      "sha12": "f88df96793bf",
+      "label": "Grunt - infected scrap-picker drone",
+      "source": "art/source/enemies/grunt_source.png",
+      "game_sprite": "art/sprites/enemies/grunt.png"
+    },
+    {
+      "asset_id": "e8212ad6-95a5-4705-87f5-f76e7f7ac005",
+      "sha12": "0fc0fad8c22a",
+      "label": "Gunner - infected mercenary gunship",
+      "source": "art/source/enemies/gunner_source.png",
+      "game_sprite": "art/sprites/enemies/gunner.png"
+    },
+    {
+      "asset_id": "0343a06d-f36c-44eb-98bc-7c7dc81e934b",
+      "sha12": "832d4a2e972b",
+      "label": "Diver - infected harpoon cutter",
+      "source": "art/source/enemies/diver_source.png",
+      "game_sprite": "art/sprites/enemies/diver.png"
     }
   ]
 }

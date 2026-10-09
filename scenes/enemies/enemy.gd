@@ -9,6 +9,14 @@ const TYPES := {
 	"diver": {"hp": 4.0, "radius": 8.0, "speed": 160.0, "pattern": "dive", "color": Color(0.75, 0.35, 0.9), "scrap": 2},
 }
 const ACID_DPS := 1.5
+## Sprites by enemy kind (SpriteCook, see spritecook-assets.json). All face left.
+const TEXTURES := {
+	"grunt": preload("res://art/sprites/enemies/grunt.png"),
+	"gunner": preload("res://art/sprites/enemies/gunner.png"),
+	"diver": preload("res://art/sprites/enemies/diver.png"),
+}
+## Modulate while flashing from a hit: overbright so the sprite blinks white-hot.
+const HIT_FLASH := Color(2.2, 2.2, 2.2)
 
 var game
 var kind := "grunt"
@@ -160,15 +168,15 @@ func take_damage(amount: float, source: PlayerRun = null, show_flash := true) ->
 
 
 func _draw() -> void:
-	var c := Color.WHITE if flash > 0.0 else color
-	match kind:
-		"grunt":
-			draw_colored_polygon(PackedVector2Array([Vector2(-8, 0), Vector2(0, -7), Vector2(8, 0), Vector2(0, 7)]), c)
-		"gunner":
-			draw_rect(Rect2(-11, -8, 22, 16), c)
-			draw_rect(Rect2(-16, -1, 5, 3), c.darkened(0.3))
-		"diver":
-			draw_colored_polygon(PackedVector2Array([Vector2(-9, 0), Vector2(8, -7), Vector2(4, 0), Vector2(8, 7)]), c)
+	var tex: Texture2D = TEXTURES.get(kind)
+	if tex:
+		# Divers rotate to face the way they're diving; others face left.
+		var angle := 0.0
+		if kind == "diver" and vel != Vector2.ZERO:
+			angle = vel.angle() - PI
+		draw_set_transform(Vector2.ZERO, angle)
+		draw_texture(tex, -tex.get_size() / 2.0, HIT_FLASH if flash > 0.0 else Color.WHITE)
+		draw_set_transform(Vector2.ZERO)
 	_draw_status()
 
 
