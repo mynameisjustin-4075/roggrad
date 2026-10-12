@@ -30,18 +30,25 @@
       "game_sprite": "art/sprites/enemies/diver.png"
     },
     {
-      "asset_id": "1d5977e5-be0e-454d-9f1f-5388cc76f98f",
-      "sha12": "7443b1a97b60",
-      "label": "Salvage Leviathan - World 1 boss (mining vessel)",
+      "asset_id": "50d19454-1f89-40f6-877e-838862d8ec56",
+      "sha12": "cc79ac826e54",
+      "label": "Salvage Leviathan - World 1 boss (flat side view, from the layout sketch)",
       "source": "art/source/bosses/salvage_leviathan_source.png",
-      "game_sprite": "art/sprites/bosses/salvage_leviathan.png"
+      "game_sprite": "art/sprites/bosses/salvage_leviathan.png (see tools/art/leviathan.py)"
     },
     {
-      "asset_id": "a35433a1-e701-43b5-8bef-e8914145ea29",
-      "sha12": "b282c69a6ff8",
-      "label": "Leviathan beam drone",
-      "source": "art/source/bosses/beam_drone_source.png",
-      "game_sprite": "art/sprites/bosses/beam_drone.png"
+      "asset_id": "7e95eb89-f6e0-4d72-8619-73f5ad12a4a9",
+      "sha12": "3acfc9626fab",
+      "label": "Leviathan beam drones, drawn beside the boss so they share its pixel size (sheet)",
+      "source": "art/source/bosses/leviathan_drone_sheet_source.png",
+      "game_sprite": "art/sprites/bosses/beam_drone.png (see tools/art/leviathan.py)"
+    },
+    {
+      "asset_id": "2afc5959-91c7-43ae-9112-1dca81c59341",
+      "sha12": "d63a0599c8c2",
+      "label": "Leviathan layout sketch (hand-drawn reference for the boss's shape)",
+      "source": "art/source/bosses/leviathan_layout_sketch.png",
+      "game_sprite": "(reference only)"
     },
     {
       "asset_id": "0d1bd654-309c-489a-af65-bbef79d19c88",

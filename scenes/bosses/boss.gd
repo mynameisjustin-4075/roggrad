@@ -1,6 +1,6 @@
 class_name Boss
 extends Enemy
-## World 1 boss, the Salvage Leviathan (placeholder art). Three phases by HP:
+## World 1 boss, the Salvage Leviathan. Three phases by HP:
 ##   1 (above 2/3): aimed 3-way bursts while it sways.
 ##   2 (2/3 - 1/3): adds rotating rings and releases two beam drones, which it
 ##      directs through patterns: "lanes", "angled" and "x".
@@ -26,14 +26,18 @@ const DRONE_PATTERNS := ["lanes", "angled", "x"]
 const MINION_PATTERNS := ["pair", "stream", "wall"]
 ## A destroyed drone is rebuilt on its dock and relaunched after this long.
 const DRONE_REBUILD_TIME := 15.0
-## Sprite (SpriteCook mining vessel). Its round hull is centred at TEXTURE_CENTER.
+## Sprite (SpriteCook mining vessel, flat side view, built by tools/art/leviathan.py).
+## Its round hull is centred at TEXTURE_CENTER.
 const TEXTURE := preload("res://art/sprites/bosses/salvage_leviathan.png")
-const TEXTURE_CENTER := Vector2(79, 72)
+const TEXTURE_CENTER := Vector2(57.5, 78.5)
 ## Positions on the hull, relative to the boss's centre.
-const HANGAR := Vector2(-42, -3)  # grunts launch from here
-const CORE := Vector2(25, -2)  # infected core: pulses brighter each phase
-## Where the drones sit on the hull's docking clamps until released (top, bottom).
-const DOCKS := [Vector2(-4, -80), Vector2(-2, 82)]
+const HANGAR := Vector2(-43, 0)  # grunts launch from here
+const CORE := Vector2(1, 0)  # infected core: pulses brighter each phase
+## Where the drones hang from the docking arms until released (top, bottom):
+## beside the hull's shoulders, with a fin held between the claw's jaws.
+const DOCKS := [Vector2(-55, -44), Vector2(-55, 45)]
+## The claws, as regions of TEXTURE. Redrawn over a docked drone so they grip its fin.
+const CLAWS := [Rect2(0, 11, 17, 12), Rect2(0, 135, 17, 12)]
 
 var phase := 1
 var hp_mult := 1.0
@@ -268,16 +272,21 @@ func _sweep_drones(alive: Array, delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_texture(TEXTURE, -TEXTURE_CENTER, HIT_FLASH if flash > 0.0 else Color.WHITE)
+	var tint := HIT_FLASH if flash > 0.0 else Color.WHITE
+	draw_texture(TEXTURE, -TEXTURE_CENTER, tint)
 	for lane in DOCKS.size():
-		if not drones_released:
-			BossDrone.draw_body(self, DOCKS[lane], 0.0, Color.WHITE)
-		elif rebuild_timers[lane] >= 0.0:
+		var docked := Color.WHITE
+		if drones_released:
+			if rebuild_timers[lane] < 0.0:
+				continue
 			# Rebuilding: the drone fades in on its dock as the timer runs down.
 			var built: float = 1.0 - rebuild_timers[lane] / DRONE_REBUILD_TIME
-			BossDrone.draw_body(self, DOCKS[lane], 0.0, Color(1, 1, 1, 0.15 + 0.6 * built))
+			docked.a = 0.15 + 0.6 * built
+		BossDrone.draw_body(self, DOCKS[lane], 0.0, docked)
+		var claw: Rect2 = CLAWS[lane]
+		draw_texture_rect_region(TEXTURE, Rect2(claw.position - TEXTURE_CENTER, claw.size), claw, tint)
 	# The infected core pulses, faster and brighter with each phase.
 	var pulse := 0.5 + 0.5 * sin(t * 3.0 * phase_speed())
-	draw_circle(CORE, 6.0 + 2.0 * pulse, Color(1.0, 0.15, 0.3, 0.25 + 0.1 * phase + 0.2 * pulse))
-	draw_circle(CORE, 2.5, Color(1.0, 0.75, 0.8, 0.6 + 0.4 * pulse))
+	draw_circle(CORE, 9.0 + 3.0 * pulse, Color(1.0, 0.15, 0.3, 0.15 + 0.08 * phase + 0.2 * pulse))
+	draw_circle(CORE, 3.5, Color(1.0, 0.75, 0.8, 0.3 + 0.4 * pulse))
 	_draw_status()

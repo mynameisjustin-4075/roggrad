@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bdn3ijdyrb3go"
-path="res://.godot/imported/beam_drone_source.png-bc42af24ef5980fbdd4fa909b8d2e33f.ctex"
+uid="uid://bqrj4ruc2l3r"
+path="res://.godot/imported/leviathan_drone_sheet_source.png-8fb0b4b4670db19af56ed310e386865b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/source/bosses/beam_drone_source.png"
-dest_files=["res://.godot/imported/beam_drone_source.png-bc42af24ef5980fbdd4fa909b8d2e33f.ctex"]
+source_file="res://art/source/bosses/leviathan_drone_sheet_source.png"
+dest_files=["res://.godot/imported/leviathan_drone_sheet_source.png-8fb0b4b4670db19af56ed310e386865b.ctex"]
 
 [params]
 
